@@ -4,8 +4,7 @@ add_library(qga_api_lib STATIC
 
 target_include_directories(qga_api_lib
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${httplib_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}        
 )
 
 
@@ -16,4 +15,5 @@ target_link_libraries(qga_api_lib
         qga_utils
         fmt::fmt
         spdlog::spdlog
+        httplib::httplib
 )
