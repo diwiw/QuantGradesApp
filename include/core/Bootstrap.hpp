@@ -1,6 +1,6 @@
 /**
- * @file RuntimeBootstrap.hpp
- * @brief Shared runtime bootstrap for all QuantumGradesApp executables.
+ * @file Bootstrap.hpp
+ * @brief Shared runtime bootstrap for all QuantGradesApp executables.
  *
  * This module defines a unified bootstrap sequence used by all entrypoints
  * (API server, CLI tools, demos, future services).
@@ -38,6 +38,7 @@ namespace qga::core
      * after bootstrap has completed:
      *  - the resolved configuration instance
      *  - collected configuration warnings
+     *  - the resolved projectRoot
      *  - optional assets directory (for demos or tests)
      *  - the resolved configuration file path
      *
@@ -53,8 +54,11 @@ namespace qga::core
     {
         core::Config& cfg;
         std::vector<std::string> warnings;
+        std::filesystem::path projectRoot;
         std::optional<std::filesystem::path> assetsDir;
         std::filesystem::path configPath;
+        std::filesystem::path dataDir;
+        std::filesystem::path logDir;
     };
 
     /**

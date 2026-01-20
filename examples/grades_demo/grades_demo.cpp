@@ -4,16 +4,15 @@
  *        with the new asynchronous logging interface.
  */
 
-#include "Grades.hpp"
-#include "core/Config.hpp"
-#include "Version.hpp"
-#include "io/FileManager.hpp"
-#include "utils/ILogger.hpp"
-#include "utils/LoggerFactory.hpp"
-#include <filesystem>
 #include <iostream>
 
-using namespace qga;
+#include "Grades.hpp"
+#include "Version.hpp"
+#include "core/Bootstrap.hpp"
+#include "io/FileManager.hpp"
+#include "utils/LoggerFactory.hpp"
+
+using namespace qga::core;
 
 /**
  * @brief Entry point for the Grades demo.
@@ -25,38 +24,40 @@ int main()
 {
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantumGradesApp Config_Grades\n";
+    std::cout << " QuantGradesApp Config_Grades\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
 
-    // === Initialize logger ===
+    // === Bootstrap ===
+    auto ctxOpt = bootstrapRuntime(std::filesystem::current_path(), AssetScope::GradesDemo);
+
+    if (!ctxOpt)
+    {
+        std::cerr << "[FATAL] Runtime bootstrap failed\n";
+        return 1;
+    }
+
+    auto& ctx = *ctxOpt;
+    auto& cfg = ctx.cfg;
+
+    // === Initialize logger===
     auto logger = qga::utils::LoggerFactory::createLogger(
-        "GradesDemoApp", "logs/grades_demo_app.log", qga::LogLevel::Info);
-    logger->log(LogLevel::Info, fmt::format("[APP] Started - version {}", APP_VERSION));
+        "GradesDemo", ctx.logDir / ctx.cfg.logFile().filename(), ctx.cfg.logLevel());
 
-    // === Load configuration ===
-    std::cout << "Loading configuration...\n";
-    logger->log(LogLevel::Info, "[Config] Loading configuration...");
+    logger->info("[APP] Started (cfg={})", ctx.configPath.string());
 
-    using qga::core::Config;
-    std::vector<std::string> warnings;
-    auto& cfg = qga::core::Config::getInstance();
-
-    cfg.loadDefaults();
-    cfg.loadFromFile("config/config.json", &warnings);
-    cfg.loadFromEnv(&warnings);
-
-    for (const auto& w : warnings)
-        logger->log(LogLevel::Warn, fmt::format("[Config] {}", w));
+    // === Log warnings ===
+    for (const auto& w : ctx.warnings)
+        logger->warn("[Config] {}", w);
 
     std::cout << "dataDir=" << cfg.dataDir().string() << " threads=" << cfg.threads()
               << " logLevel=" << qga::toString(cfg.logLevel())
-              << " logFile=" << cfg.logFile().string() << '\n';
+              << " logFile=" << (ctx.logDir / cfg.logFile().filename()).string() << '\n';
 
     // === Grades demo ===
     qga::core::Grades g;
-    logger->log(LogLevel::Info, "[GradesDemo] Adding notes: 5, 4, 3");
+    logger->info("[GradesDemo] Adding notes: 5, 4, 3");
     std::cout << "Adding notes: 5, 4, 3\n";
     g.add(5);
     g.add(4);
@@ -66,52 +67,48 @@ int main()
     g.printSummary();
 
     // === Save grades ===
-    std::cout << "\nSaving grades to \"data/grades.txt\"...\n";
+    const auto gradesOut = ctx.dataDir / "grades.txt";
+
     std::vector<std::string> grade_lines;
     for (int note : g.getNotes())
     {
         grade_lines.push_back(std::to_string(note));
     }
 
-    if (qga::io::FileManager::writeAllLines("data/grades.txt", grade_lines))
+    if (!qga::io::FileManager::writeAllLines(gradesOut, grade_lines))
     {
-        logger->log(LogLevel::Info, "[FileManager] Grades saved to data/grades.txt");
-        std::cout << "Grades saved successfully\n";
+        logger->error("[FileManager] Failed to write {}", gradesOut.string());
+        return 1;
     }
-    else
-    {
-        logger->log(LogLevel::Err, "[FileManager] Failed to save grades to file");
-        std::cerr << "Error: Could not save grades to file.\n";
-    }
+
+    logger->info("[FileManager] Wrote {}", gradesOut.string());
 
     // === Read file ===
-    const std::string FILE_PATH = "data/readGrades.txt";
-    std::cout << "\nReading data from: " << FILE_PATH << "\n";
-    logger->log(LogLevel::Info, fmt::format("[FileManager] Reading data from {}", FILE_PATH));
+    const auto readPath = *ctx.assetsDir / "readGrades.txt";
+    logger->info("[FileManager] Reading assets file {}", readPath.string());
 
-    auto lines_opt = qga::io::FileManager::readAllLines(FILE_PATH);
+    auto lines_opt = qga::io::FileManager::readAllLines(readPath);
     if (!lines_opt.has_value())
     {
-        logger->log(LogLevel::Err, fmt::format("[FileManager] Failed to read file: {}", FILE_PATH));
-        std::cerr << "Error: Could not read file: " << FILE_PATH << "\n";
+        logger->error("[FileManager] Failed to read {}", readPath.string());
+        std::cerr << "Error: Could not read file: " << readPath << "\n";
         return 1;
     }
 
     const auto& lines = lines_opt.value();
     if (lines.empty())
     {
-        logger->log(LogLevel::Warn, fmt::format("[FileManager] File is empty: {}", FILE_PATH));
-        std::cout << "No data found in file: " << FILE_PATH << "\n";
+        logger->warn("[FileManager] Empty file {}", readPath.string());
         return 0;
     }
 
     // === Display file ===
-    std::cout << "=== File content: " << FILE_PATH << " ===\n";
-    for (const auto& line : lines)
+    std::cout << "\n=== File content: " << readPath << " ===\n";
+    for (const auto& line : *lines_opt)
         std::cout << line << "\n";
 
-    logger->log(LogLevel::Info, fmt::format("[FileManager] File read successfully: {}", FILE_PATH));
-    logger->log(LogLevel::Info, "[APP] Application finished successfully.");
+    logger->info("[FileManager] File read successfully: {}", readPath.string());
+    logger->info("[APP] Application finished successfully.");
 
     return 0;
 }

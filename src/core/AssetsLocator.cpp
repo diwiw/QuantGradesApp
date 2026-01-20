@@ -12,6 +12,8 @@ namespace qga::core
             return "examples/grades_demo/assets";
         case AssetScope::LoggerDemo:
             return "examples/logger_demo/assets";
+        case AssetScope::BacktestDemo:
+            return "examples/backtest_demo/assets";
         }
         return {};
     }

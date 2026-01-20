@@ -33,8 +33,7 @@ target_link_libraries(grades_demo PRIVATE
 )
 
 target_compile_definitions(grades_demo PRIVATE
-    USE_CURL
-    DATA_PATH=\"${CMAKE_SOURCE_DIR}/data\"
+    USE_CURL    
 )
 
 set_target_properties(grades_demo PROPERTIES

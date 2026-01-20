@@ -6,7 +6,8 @@ add_library(qga_core STATIC
     Config.cpp
     ConfigLocator.cpp
     AssetsLocator.cpp
-    RuntimeBootstrap.cpp
+    Bootstrap.cpp
+    Statistics.cpp
     # add new core sources explicitly here
 )
 

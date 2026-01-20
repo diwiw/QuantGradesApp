@@ -1,7 +1,8 @@
+#include "core/Bootstrap.hpp"
+
 #include <iostream>
 
 #include "core/ConfigLocator.hpp"
-#include "core/RuntimeBootstrap.hpp"
 
 namespace fs = std::filesystem;
 
@@ -13,8 +14,11 @@ namespace qga::core
     {
         RuntimeContext ctx{.cfg = core::Config::getInstance(),
                            .warnings = {},
+                           .projectRoot = {},
                            .assetsDir = std::nullopt,
-                           .configPath = {}};
+                           .configPath = {},
+                           .dataDir = {},
+                           .logDir = {}};
 
         // 1) Find config
         auto cfgPath = core::findConfigFile(startDir);
@@ -25,6 +29,7 @@ namespace qga::core
             return std::nullopt;
         }
         ctx.configPath = *cfgPath;
+        ctx.projectRoot = ctx.configPath.parent_path().parent_path();
 
         // 2) Load config: defaults -> file -> env
         ctx.cfg.loadDefaults();
@@ -43,12 +48,19 @@ namespace qga::core
         }
 
         // 4) Prepare runtime dirs (optional)
+        auto dataCfg = ctx.cfg.dataDir();
+        ctx.dataDir = dataCfg.is_relative() ? ctx.projectRoot / dataCfg : dataCfg;
+
+        auto logFile = ctx.cfg.logFile();
+        ctx.logDir =
+            logFile.is_relative() ? ctx.projectRoot / logFile.parent_path() : logFile.parent_path();
+
         if (createRuntimeDirs)
         {
             try
             {
-                fs::create_directories(ctx.cfg.dataDir());
-                fs::create_directories(ctx.cfg.logFile().parent_path());
+                fs::create_directories(ctx.dataDir);
+                fs::create_directories(ctx.logDir);
             }
             catch (const std::exception& e)
             {
