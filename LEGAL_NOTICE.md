@@ -28,4 +28,4 @@ and remain the exclusive property of the Licensor.
 ## Contact
 
 For commercial licensing or permissions:
-📧 dawid.skrobol88@gmail.com
+📧 contact@quantgrades.com

@@ -37,7 +37,8 @@ app.log
 *.log
 
 # Development tools
-tools/
+tools/tmp/
+tools/local/
 
 # Generated data
 data/grades.txt

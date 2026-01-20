@@ -3,7 +3,7 @@
         "port": 8080
     },
     "logging": {
-        "level": "DEBUG",
+        "level": "INFO",
         "file": "logs/qga_api.log",
         "max_size_mb": 20,
         "max_files": 5
@@ -12,6 +12,6 @@
         "data_dir": "data"
     },
     "engine": {
-        "threads": 8
+        "threads": 0
     }
 }

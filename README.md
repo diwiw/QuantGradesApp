@@ -1,6 +1,6 @@
 # QuantGradesApp
 
-> **Version:** `v0.9.2`
+> **Version:** `v1.0.0-dev`
 > **Build System:** CMake + Ninja
 > **Standard:** C++23
 > **Documentation:** Doxygen + Mermaid + Graphviz
