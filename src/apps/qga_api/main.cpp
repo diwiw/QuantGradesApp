@@ -1,3 +1,6 @@
+#include <spdlog/spdlog.h>
+
+#include <csignal>
 #include <iostream>
 
 #include "Version.hpp"
@@ -28,16 +31,32 @@ int main()
         }
 
         auto& ctx = *ctxOpt;
+        auto& cfg = ctx.cfg;
 
         // === Logger (async) ===
         auto logger = utils::LoggerFactory::createAsyncRotatingLogger(
-            "api", (ctx.logDir / "qga_api.log").string(), ctx.cfg.logLevel(),
-            ctx.cfg.logMaxSizeBytes(), ctx.cfg.logMaxFiles());
+            "qga_api", ctx.logDir / cfg.logFile().filename(), cfg.logLevel(), cfg.logMaxSizeBytes(),
+            cfg.logMaxFiles());
 
         ctx.cfg.setLogger(logger);
         logger->info("QuantGradesApp API starting... version={}", APP_VERSION);
 
-        qga::api::ApiServer server(logger, ctx.cfg);
+        qga::api::ApiServer server(logger, cfg);
+
+        // ---- graceful shutdown ----
+        std::signal(SIGINT,
+                    [](int)
+                    {
+                        spdlog::shutdown();
+                        std::exit(0);
+                    });
+
+        std::signal(SIGTERM,
+                    [](int)
+                    {
+                        spdlog::shutdown();
+                        std::exit(0);
+                    });
         server.start();
     }
     catch (const std::exception& e)
