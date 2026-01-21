@@ -76,7 +76,7 @@ include_directories(${INCLUDE_DIR} ${EXTERNAL_DIR})
 set(VERSION_TEMPLATE ${CMAKE_SOURCE_DIR}/cmake/templates/version.h.in)
 set(VERSION_HEADER ${CMAKE_BINARY_DIR}/generated/Version.hpp)
 
-# Używamy configure_file — proste, niezawodne i działa w CI
+# We use configure_file — simple and works in CI
 configure_file(
     ${VERSION_TEMPLATE}
     ${VERSION_HEADER}
@@ -105,7 +105,6 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(CLI11 CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
 
 # ---- nlohmann_json (vcpkg / system / fallback) --------------
@@ -121,6 +120,21 @@ if(NOT nlohmann_json_FOUND)
         GIT_TAG v3.11.3
     )
     FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# ---- CLI11 (vcpkg / system / fallback) --------------
+
+find_package(CLI11 CONFIG QUIET)
+
+if(NOT CLI11_FOUND)
+    message(STATUS "CLI11 not found, using FetchContent fallback")
+    include(FetchContent)
+    FetchContent_Declare(
+        CLI11
+        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+        GIT_TAG v2.6.1
+    )
+    FetchContent_MakeAvailable(CLI11)
 endif()
 
 # ============================================================
