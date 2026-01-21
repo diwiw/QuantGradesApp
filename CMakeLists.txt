@@ -104,6 +104,15 @@ endif()
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+
+if (NOT nlohman_json_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        nlohman_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.12.0
+    )
+
 find_package(CURL REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
