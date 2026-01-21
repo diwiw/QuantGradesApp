@@ -377,7 +377,7 @@ jobs:
       - name: Build (Release)
         shell: cmd
         run: |
-          echo [🏗️] Building QuantumGradesApp...
+          echo [🏗️] Building QuantGradesApp...
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
 
           REM === Ensure build directory exists ===
@@ -439,7 +439,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: QuantumGradesApp-Windows-${{ github.run_number }}
+          name: QuantGradesApp-Windows-${{ github.run_number }}
           path: |
             build\*.exe
             build\*.pdb

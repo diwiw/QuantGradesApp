@@ -1,5 +1,5 @@
 # ==============================================
-# QuantumGradesApp — End-to-End (E2E) Tests
+# QuantGradesApp — End-to-End (E2E) Tests
 # ==============================================
 
 message(STATUS "🧪 Configuring end-to-end (E2E) tests...")

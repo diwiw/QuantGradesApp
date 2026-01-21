@@ -7,22 +7,21 @@
 namespace po = boost::program_options;
 #endif
 
-#include <filesystem>
 #include <fmt/core.h>
+
+#include <filesystem>
 #include <iostream>
 
 #include "Version.hpp"
 #include "common/LogLevel.hpp"
 #include "core/Config.hpp"
-
-#include "utils/ILogger.hpp"
-#include "utils/LoggerFactory.hpp"
-
 #include "domain/backtest/Engine.hpp"
 #include "ingest/DataIngest.hpp"
 #include "io/DataExporter.hpp"
 #include "strategy/BuyHold.hpp"
 #include "strategy/MACrossover.hpp"
+#include "utils/ILogger.hpp"
+#include "utils/LoggerFactory.hpp"
 
 namespace qga::cli
 {
@@ -33,7 +32,7 @@ namespace qga::cli
     int AppCLI::run(int argc, char** argv)
     {
 #ifndef USE_BOOST
-        CLI::App app{"QuantumGradesApp CLI - run backtests and simulations"};
+        CLI::App app{"QuantGradesApp CLI - run backtests and simulations"};
 
         std::string config_path;
         std::string cli_input;
@@ -50,7 +49,7 @@ namespace qga::cli
 
         if (show_version)
         {
-            std::cout << "QuantumGradesApp " << APP_VERSION << " (" << APP_BUILD_DATE << ")\n";
+            std::cout << "QuantGradesApp " << APP_VERSION << " (" << APP_BUILD_DATE << ")\n";
             return 0;
         }
 
@@ -60,7 +59,7 @@ namespace qga::cli
             return 1;
         }
 #else
-        po::options_description desc("QuantumGradesApp CLI options");
+        po::options_description desc("QuantGradesApp CLI options");
         desc.add_options()("help,h", "Show help")("version,v", "Version")(
             "config,c", po::value<std::string>(),
             "Config file")("input,i", po::value<std::string>(),
@@ -78,7 +77,7 @@ namespace qga::cli
 
         if (vm.count("version"))
         {
-            std::cout << "QuantumGradesApp " << APP_VERSION << "\n";
+            std::cout << "QuantGradesApp " << APP_VERSION << "\n";
             return 0;
         }
 

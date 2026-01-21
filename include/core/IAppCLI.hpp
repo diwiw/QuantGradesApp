@@ -4,10 +4,10 @@ namespace qga::core
 {
 
     /**
-     * @brief Interface for the main QuantumGradesApp CLI entry point.
+     * @brief Interface for the main QuantGradesApp CLI entry point.
      *
      * This interface defines the abstract entry point for user interaction
-     * with the QuantumGradesApp application via the command line.
+     * with the QuantGradesApp application via the command line.
      *
      * Different implementations can use various argument parsers (CLI11, Boost.Program_options,
      * etc.) or even represent other frontends like REST or GUI.

@@ -1,6 +1,6 @@
 
 Each subdirectory groups fixtures by the area of the system they are used to test.
-# Test Fixtures – QuantumGradesApp
+# Test Fixtures – QuantGradesApp
 
 This directory contains **small, deterministic test fixtures** used across unit, integration, and end-to-end (E2E) tests.
 

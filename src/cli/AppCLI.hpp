@@ -1,11 +1,18 @@
 #pragma once
 #include "core/IAppCLI.hpp"
 
+/**
+ * NOTE (bootstrap):
+ * This CLI implementation directly orchestrates domain, ingest and IO layers.
+ * This is intentional for 1.0.0 bootstrap and will be refactored into
+ * an application service layer in milestone 1.1/1.0.5.
+ */
+
 namespace qga::cli
 {
 
     /**
-     * @brief CLI implementation of the QuantumGradesApp application.
+     * @brief CLI implementation of the QuantGradesApp application.
      *
      * This class implements the IAppCLI interface using the CLI11 library.
      * It provides the command-line interface used to run backtests,

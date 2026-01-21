@@ -2,11 +2,16 @@
 # 🧠 qga_core — Application logic and shared data structures
 # ============================================================
 
-file(GLOB CORE_SRC CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+add_library(qga_core STATIC
+    Config.cpp
+    ConfigLocator.cpp
+    AssetsLocator.cpp
+    Bootstrap.cpp
+    Statistics.cpp
+    # add new core sources explicitly here
 )
 
-add_library(qga_core STATIC ${CORE_SRC})
+add_library(qga::core ALIAS qga_core)
 
 target_include_directories(qga_core
     PUBLIC
@@ -26,4 +31,8 @@ set_target_properties(qga_core PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+install(TARGETS qga_core
+    ARCHIVE DESTINATION lib
 )

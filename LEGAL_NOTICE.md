@@ -1,6 +1,6 @@
 # Legal Notice & License History
 
-## Project: QuantumGradesApp
+## Project: QuantGradesApp
 
 This repository was previously made available under a permissive license
 prior to commit 71a6cdd.
@@ -22,10 +22,10 @@ No rights are granted retroactively or by implication.
 
 ## Trademarks & Branding
 
-The names "QuantumGradesApp", "QGA", and related branding are not licensed
+The names "QuantGradesApp", "QGA", and related branding are not licensed
 and remain the exclusive property of the Licensor.
 
 ## Contact
 
 For commercial licensing or permissions:
-📧 dawid.skrobol88@gmail.com
+📧 contact@quantgrades.com

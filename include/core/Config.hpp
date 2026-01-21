@@ -1,6 +1,6 @@
 /**
  * @file Config.hpp
- * @brief Global singleton configuration for QuantumGradesApp.
+ * @brief Global singleton configuration for QuantGradesApp.
  *
  * Supports:
  * - JSON-based config loading: logging, paths, engine, api
@@ -97,7 +97,7 @@ namespace qga::core
         // Stored fields
         // ============================================================
 
-        std::string profile_ = "dev";
+        std::string profile_;
 
         // API server
         int api_port_ = 8080;

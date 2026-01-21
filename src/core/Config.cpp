@@ -66,10 +66,14 @@ namespace qga::core
         unsigned hw = std::max(1u, std::thread::hardware_concurrency());
 
         // Threads validation
-        if (threads_ < 1)
+        if (threads_ < 0)
         {
             addWarn(warnings, "engine.threads < 1 → fallback to 1");
-            threads_ = 1;
+            threads_ = hw;
+        }
+        else if (threads_ == 0)
+        {
+            threads_ = hw;
         }
         else if (threads_ > static_cast<int>(hw))
         {
@@ -176,9 +180,10 @@ namespace qga::core
     {
         // QGA_PROFILE
         if (const char* p = std::getenv("QGA_PROFILE"))
+        {
             profile_ = p;
-
-        loadFromFile("config/config." + profile_ + ".json", warnings);
+            loadFromFile("config/config." + profile_ + ".json", warnings);
+        }
 
         // API PORT
         if (const char* p = std::getenv("QGA_API_PORT"))

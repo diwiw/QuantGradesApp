@@ -1,5 +1,5 @@
 -- ======================================================
--- QuantumGradesApp Persistence Schema (v0.7.0 baseline)
+-- QuantGradesApp Persistence Schema (v0.7.0 baseline)
 -- ======================================================
 
 PRAGMA foreign_keys = ON;

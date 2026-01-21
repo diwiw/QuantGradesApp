@@ -1,5 +1,0 @@
-{
-            "logging": { "level": "INFO" },
-            "paths":   { "data_dir": "live_data" },
-            "engine":  { "threads": 1 }
-        }

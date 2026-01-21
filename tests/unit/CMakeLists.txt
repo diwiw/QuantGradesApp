@@ -1,5 +1,5 @@
 # ==============================================
-# QuantumGradesApp — Unit Tests
+# QuantGradesApp — Unit Tests
 # ==============================================
 
 message(STATUS "🧪 Configuring unit tests...")
@@ -55,9 +55,9 @@ target_link_libraries(qga_tests PRIVATE
 #endif()
 
 # === Register in CTest (optional, for future CI) ===
-add_test(NAME QuantumGradesAppTests COMMAND qga_tests)
+add_test(NAME QuantGradesAppTests COMMAND qga_tests)
 
-set_tests_properties(QuantumGradesAppTests PROPERTIES
+set_tests_properties(QuantGradesAppTests PROPERTIES
   LABELS "unit;fast"
 )
 

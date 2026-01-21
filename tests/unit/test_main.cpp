@@ -1,12 +1,12 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <filesystem>
+#include <iostream>
+#include <memory>
+
 #include "Version.hpp"
 #include "doctest.h"
 #include "utils/LoggerFactory.hpp"
 #include "utils/SpdLogger.hpp"
-
-#include <filesystem>
-#include <iostream>
-#include <memory>
 
 using namespace qga;
 using namespace utils;
@@ -44,7 +44,7 @@ struct VersionPrinter
     VersionPrinter()
     {
         std::cout << "===================================\n";
-        std::cout << " QuantumGradesApp Tests\n";
+        std::cout << " QuantGradesApp Tests\n";
         std::cout << " Version: " << APP_VERSION << "\n";
         std::cout << " Build date: " << APP_BUILD_DATE << "\n";
         std::cout << "===================================\n\n";

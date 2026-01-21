@@ -211,7 +211,7 @@ TEST_SUITE("Config/Profiles")
         unsetenv("QGA_LOG_FILE");
     };
 
-    TEST_CASE("Default profile is dev when QGA_PROFILE is missing")
+    TEST_CASE("Default profile is prod (profile == empty) when QGA_PROFILE is missing")
     {
         unset_all();
 
@@ -219,7 +219,7 @@ TEST_SUITE("Config/Profiles")
         cfg.loadDefaults();
         cfg.loadFromEnv();
 
-        CHECK(cfg.profile() == "dev");
+        CHECK(cfg.profile().empty());
     }
 
     TEST_CASE("Loads correct profile JSON: test")

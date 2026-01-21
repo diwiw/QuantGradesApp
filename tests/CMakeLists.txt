@@ -1,5 +1,5 @@
 # ==============================================
-# QuantumGradesApp — Tests
+# QuantGradesApp — Tests
 # ==============================================
 
 message(STATUS "🧪 Configuring tests...")

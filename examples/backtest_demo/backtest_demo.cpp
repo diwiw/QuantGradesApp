@@ -1,15 +1,18 @@
-#include "Version.hpp"
-#include "core/Config.hpp"
-#include "io/FileManager.hpp"
-#include "utils/ILogger.hpp"
-#include "utils/LoggerFactory.hpp"
+// NOTE: This demo uses legacy-style runtime paths and logging.
+//       It is not representative of production configuration.
+
 #include <filesystem>
 #include <iostream>
 
+#include "Version.hpp"
+#include "core/Bootstrap.hpp"
 #include "domain/backtest/BarSeries.hpp"
 #include "domain/backtest/Engine.hpp"
 #include "domain/backtest/Execution.hpp"
 #include "strategy/BuyHold.hpp"
+#include "utils/ILogger.hpp"
+#include "utils/LoggerFactory.hpp"
+
 // #include "strategy/MACrossover.hpp" // Optional alt strategy
 
 int main()
@@ -18,24 +21,31 @@ int main()
 
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantumGradesApp Backtest Demo\n";
+    std::cout << " QuantGradesApp Backtest Demo\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
 
-    // === Setup Logger ===
-    auto logger = utils::LoggerFactory::createLogger("BacktestDemo", "logs/backtest_demo.log",
-                                                     LogLevel::Info);
-    logger->log(LogLevel::Info, "[APP] Backtest demo started");
+    // === Bootstrap ===
+    auto ctxOpt = qga::core::bootstrapRuntime(std::filesystem::current_path(), std::nullopt);
 
-    // === Load Config ===
-    auto& cfg = qga::core::Config::getInstance();
-    std::vector<std::string> warnings;
-    cfg.loadDefaults();
-    cfg.loadFromFile("config/config.json", &warnings);
-    cfg.loadFromEnv(&warnings);
-    for (const auto& w : warnings)
-        logger->log(LogLevel::Warn, "[Config] " + w);
+    if (!ctxOpt)
+    {
+        std::cerr << "[FATAL] Runtime bootstrap failed\n";
+        return 1;
+    }
+
+    auto& ctx = *ctxOpt;
+
+    // === Initialize logger (from config)===
+    auto logger = utils::LoggerFactory::createLogger(
+        "BacktestDemo", ctx.logDir / ctx.cfg.logFile().filename(), ctx.cfg.logLevel());
+
+    logger->info("[APP] Started (cfg={})", ctx.configPath.string());
+
+    // === Log warnings ===
+    for (const auto& w : ctx.warnings)
+        logger->warn("[Config] {}", w);
 
     // === Build BarSeries (simple 4-bar series) ===
     domain::backtest::BarSeries series;
@@ -49,7 +59,7 @@ int main()
     ts += 60'000;
     series.add({ts, 108.0, 108.0, 108.0, 108.0, 0.0});
 
-    logger->log(LogLevel::Info, "[Data] Created 4-bar test series");
+    logger->info("[Data] Created 4-bar test series");
 
     // === Execution parameters ===
     domain::backtest::ExecParams exec{};
@@ -60,7 +70,7 @@ int main()
     domain::backtest::Engine engine(10'000.0, exec);
     strategy::BuyHold strategy;
 
-    logger->log(LogLevel::Info, "[Engine] Running Buy&Hold backtest");
+    logger->info("[Engine] Running Buy&Hold backtest");
 
     // === Run the backtest ===
     auto result = engine.run(series, strategy);
@@ -71,10 +81,9 @@ int main()
     std::cout << "Final equity:    " << result.final_equity_ << "\n";
     std::cout << "Trades executed: " << result.trades_executed_ << "\n";
 
-    logger->log(LogLevel::Info,
-                fmt::format("[Results] Initial: {:.2f}, Final: {:.2f}, Trades: {}",
-                            result.initial_equity_, result.final_equity_, result.trades_executed_));
+    logger->info("[Results] Initial: {:.2f}, Final: {:.2f}, Trades: {}", result.initial_equity_,
+                 result.final_equity_, result.trades_executed_);
 
-    logger->log(LogLevel::Info, "[APP] Backtest demo finished successfully.");
+    logger->info("[APP] Backtest demo finished successfully.");
     return 0;
 }

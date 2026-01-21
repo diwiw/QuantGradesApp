@@ -1,12 +1,16 @@
+// NOTE: This demo uses legacy-style runtime paths and logging.
+//       It is not representative of production configuration.
+
+#include <spdlog/async.h>
+
+#include <iostream>
+#include <memory>
+
 #include "Version.hpp"
-#include "core/Config.hpp"
+#include "core/Bootstrap.hpp"
 #include "ingest/DataIngest.hpp"
 #include "io/DataExporter.hpp"
 #include "utils/SpdLogger.hpp"
-#include <filesystem>
-#include <iostream>
-#include <memory>
-#include <spdlog/async.h>
 
 using namespace qga;
 using namespace utils;
@@ -15,41 +19,51 @@ int main()
 {
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantumGradesApp Backtest\n";
+    std::cout << " QuantGradesApp Logger Demo\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
 
-    // ===== 1. Load Config =====
-    auto& config = qga::core::Config::getInstance();
-    config.loadFromEnv();
+    // === Bootstrap ===
+    auto ctxOpt =
+        core::bootstrapRuntime(std::filesystem::current_path(), core::AssetScope::LoggerDemo);
 
-    auto log_level = config.logLevel();
-
-    // ===== 2. Setup Logger =====
-    if (!spdlog::thread_pool())
+    if (!ctxOpt)
     {
-        spdlog::init_thread_pool(8192, 1); // start async thread pool
+        std::cerr << "[FATAL] Runtime bootstrap failed\n";
+        return 1;
     }
+    auto& ctx = *ctxOpt;
+    auto& cfg = ctx.cfg;
 
-    auto logger =
-        std::make_shared<SpdLogger>("DemoLogger",
-                                    std::vector<std::shared_ptr<spdlog::sinks::sink>>{
-                                        std::make_shared<spdlog::sinks::stdout_color_sink_mt>()},
-                                    true // async
-        );
-    logger->setLevel(log_level);
-    logger->info("Logger initialized with level {}", toString(log_level));
-    std::cout << "Config log level: " << toString(config.logLevel()) << "\n";
+    // ===== Logger Init =====
+    if (!spdlog::thread_pool())
+        spdlog::init_thread_pool(8192, 1); // start async thread pool
+
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        (ctx.logDir / cfg.logFile().filename()).string(), true);
+
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto logger = std::make_shared<SpdLogger>(
+        "LoggerDemo", std::vector<std::shared_ptr<spdlog::sinks::sink>>{console_sink, file_sink},
+        true // async
+    );
+
+    logger->setLevel(cfg.logLevel());
+
+    logger->info("[APP] Started (cfg={})", ctx.configPath.string());
+
+    for (const auto& w : ctx.warnings)
+        logger->warn("[Config] {}", w);
+
+    logger->info("Logger initialized with level {}", toString(cfg.logLevel()));
+    std::cout << "Config log level: " << toString(cfg.logLevel()) << "\n";
     // ===== 3. Ingest Data =====
     qga::ingest::DataIngest ingest(logger);
 
-    std::filesystem::path cwd = std::filesystem::current_path();
-    logger->debug("Current working directory: {}", cwd.string());
+    const auto demo_csv = *ctx.assetsDir / "demo.csv";
 
-    std::string demo_csv = std::string(DATA_PATH) + "/demo.csv";
-
-    auto series = ingest.fromCsv(demo_csv);
+    auto series = ingest.fromCsv(demo_csv.string());
     if (!series.has_value())
     {
         logger->error("Failed to ingest data from CSV");
@@ -65,10 +79,10 @@ int main()
     try
     {
         namespace fs = std::filesystem;
-        fs::create_directories("build"); // ensure output dir exists
+        // fs::create_directories(cfg.dataDir()); // ensure output dir exists
 
-        auto csv_path = fs::path("build/demo_out.csv");
-        auto json_path = fs::path("build/demo_out.json");
+        auto csv_path = ctx.dataDir / "demo_out.csv";
+        auto json_path = ctx.dataDir / "demo_out.json";
         io::DataExporter exporter_csv(csv_path, logger, io::ExportFormat::CSV, false);
         exporter_csv.exportAll(*series);
 
@@ -82,7 +96,7 @@ int main()
         logger->error("Exporter exception: {}", ex.what());
     }
 
-    logger->info("Demo finished.");
+    logger->info("[APP] Logger demo finished successfully.");
     logger->flush();
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); //
     spdlog::shutdown();                                          // cleanup spdlog

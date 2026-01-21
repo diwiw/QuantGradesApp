@@ -1,5 +1,5 @@
 # ============================================================
-# 🧩 CLI Layer — QuantumGradesApp Command-Line Interface
+# 🧩 CLI Layer — QuantGradesApp Command-Line Interface
 # ============================================================
 
 # === 1. Build reusable library for CLI logic ===

@@ -41,8 +41,7 @@ target_link_libraries(logger_demo PRIVATE
 
 
 target_compile_definitions(logger_demo PRIVATE
-    USE_CURL
-    DATA_PATH=\"${CMAKE_SOURCE_DIR}/data\"
+    USE_CURL    
 )
 
 set_target_properties(logger_demo PROPERTIES
@@ -53,4 +52,4 @@ set_target_properties(logger_demo PROPERTIES
 	#target_include_directories(demo_db_logger_config PRIVATE ${INCLUDE_DIR})
 	#target_link_libraries(demo_db_logger_config PRIVATE nlohmann_json::nlohmann_json CURL::libcurl spdlog::spdlog SQLite::SQLite3)
 	#target_compile_definitions(demo_db_logger_config PRIVATE USE_CURL
-#		DATA_PATH=\"${CMAKE_SOURCE_DIR}/data\"
+#		D A T A_P A T H=\"${CMAKE_SOURCE_DIR}/data\"

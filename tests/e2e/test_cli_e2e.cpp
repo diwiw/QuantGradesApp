@@ -1,10 +1,11 @@
-#include "doctest.h"
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include "doctest.h"
 
 namespace fs = std::filesystem;
 
@@ -213,9 +214,9 @@ TEST_CASE("E2E: negative case – missing CSV results in error")
     CHECK(WEXITSTATUS(exit_code) != 0);
 #endif
 
-    bool contains_error = stdout_and_err.find("error") != std::string::npos ||
-                          stdout_and_err.find("Error") != std::string::npos ||
-                          stdout_and_err.find("ERROR") != std::string::npos;
+    bool contains_error = stdout_and_err.find("error") != std::string::npos
+                          || stdout_and_err.find("Error") != std::string::npos
+                          || stdout_and_err.find("ERROR") != std::string::npos;
 
     CHECK_MESSAGE(contains_error, "Expected some error message, got:\n" << stdout_and_err);
 
@@ -255,7 +256,7 @@ TEST_CASE("E2E: CLI --version prints version info")
     CHECK(WEXITSTATUS(exit_code) == 0);
 #endif
 
-    CHECK_MESSAGE(out.find("QuantumGradesApp") != std::string::npos,
+    CHECK_MESSAGE(out.find("QuantGradesApp") != std::string::npos,
                   "Version output missing expected app name.\n"
                       << out);
 }
@@ -274,9 +275,9 @@ TEST_CASE("E2E: running CLI without --config produces error")
     CHECK(WEXITSTATUS(exit_code) != 0);
 #endif
 
-    bool contains_error = out.find("--config") != std::string::npos ||
-                          out.find("required") != std::string::npos ||
-                          out.find("Error") != std::string::npos;
+    bool contains_error = out.find("--config") != std::string::npos
+                          || out.find("required") != std::string::npos
+                          || out.find("Error") != std::string::npos;
 
     CHECK_MESSAGE(contains_error, "Missing expected error about --config:\n" << out);
 }

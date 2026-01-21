@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.27)
-project(QuantumGradesApp LANGUAGES CXX)
+project(QuantGradesApp LANGUAGES CXX)
 
 # ============================================================
 # 🧩 Load version info
 # ============================================================
 include(${CMAKE_SOURCE_DIR}/cmake/version.cmake)
 
-message(STATUS "🧩 QuantumGradesApp version: ${QGA_VERSION} (${QGA_GIT_VERSION})")
+message(STATUS "🧩 QuantGradesApp version: ${QGA_VERSION} (${QGA_GIT_VERSION})")
 message(STATUS "🕓 Build date: ${QGA_BUILD_DATE}")
 
 # ============================================================
@@ -76,7 +76,7 @@ include_directories(${INCLUDE_DIR} ${EXTERNAL_DIR})
 set(VERSION_TEMPLATE ${CMAKE_SOURCE_DIR}/cmake/templates/version.h.in)
 set(VERSION_HEADER ${CMAKE_BINARY_DIR}/generated/Version.hpp)
 
-# Używamy configure_file — proste, niezawodne i działa w CI
+# We use configure_file — simple and works in CI
 configure_file(
     ${VERSION_TEMPLATE}
     ${VERSION_HEADER}
@@ -101,13 +101,55 @@ endif()
 # 📦 Dependencies (vcpkg)
 # ============================================================
 
+include(FetchContent)
+
+# ---- fmt ----------------------------------------------------
 find_package(fmt CONFIG REQUIRED)
+
+# ---- spdlog -------------------------------------------------
 find_package(spdlog CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
+
+# ---- CURL ---------------------------------------------------
 find_package(CURL REQUIRED)
+
+# ---- SQLite3 -----------------------------------------------
 find_package(SQLite3 REQUIRED)
-find_package(CLI11 CONFIG REQUIRED)
-find_package(httplib CONFIG REQUIRED)
+
+# ---- nlohmann_json (system / vcpkg / fallback) --------------
+find_package(nlohmann_json CONFIG QUIET)
+
+if(NOT nlohmann_json_FOUND)
+    message(STATUS "nlohmann_json not found, using FetchContent fallback")
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG        v3.11.3
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# ---- CLI11 (system / vcpkg / fallback) ----------------------
+find_package(CLI11 CONFIG QUIET)
+
+if(NOT CLI11_FOUND)
+    message(STATUS "CLI11 not found, using FetchContent fallback")
+    FetchContent_Declare(
+        CLI11
+        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+        GIT_TAG        v2.6.1
+    )
+    FetchContent_MakeAvailable(CLI11)
+endif()
+
+# ---- cpp-httplib (header-only, always FetchContent) ---------
+# NOTE: cpp-httplib is header-only and does not provide
+#       reliable system CMake packages on Linux.
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG        v0.15.3
+)
+FetchContent_MakeAvailable(httplib)
 
 # ============================================================
 # 🧩 Subdirectories (modular build)

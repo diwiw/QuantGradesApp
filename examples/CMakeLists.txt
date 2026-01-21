@@ -1,5 +1,5 @@
 # ==============================================
-# Examples collection for QuantumGradesApp
+# Examples collection for QuantGradesApp
 # ==============================================
 
 add_subdirectory(backtest_demo)

@@ -1,6 +1,6 @@
-# QuantumGradesApp
+# QuantGradesApp
 
-> **Version:** `v0.9.2`
+> **Version:** `v1.0.0-dev`
 > **Build System:** CMake + Ninja
 > **Standard:** C++23
 > **Documentation:** Doxygen + Mermaid + Graphviz
@@ -9,7 +9,7 @@
 > **Architecture:** Modular, layered, Clean Architecture
 > **Performance Tools:** perf + FlameGraph (Linux, profiling preset)
 
-QuantumGradesApp is a modular, extensible quantitative backtesting framework written in modern C++.
+QuantGradesApp is a modular, extensible quantitative backtesting framework written in modern C++.
 Originally built as a grades/statistics demo, it has evolved into a clean, layered architecture suitable for:
   - quantitative research
   - backtesting trading strategies
@@ -157,7 +157,7 @@ classDiagram
 # Project Structure
 
 ```
-QuantumGradesApp/
+QuantGradesApp/
 ├─ .github/                                 # CI/CD pipelines (Ubuntu/Windows)
 ├─ build/                                   # Out-of-source build directory
 ├─ changelog/                               # Version changelogs
@@ -425,7 +425,7 @@ Project created and maintained by https://github.com/diwiw.
 
 # License
 
-QuantumGradesApp is licensed under the **Business Source License (BSL) 1.1**.
+QuantGradesApp is licensed under the **Business Source License (BSL) 1.1**.
 
 - ❌ Commercial use is NOT permitted without a separate license
 - ❌ SaaS / hosted offerings are NOT permitted

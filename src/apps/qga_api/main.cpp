@@ -1,24 +1,62 @@
+#include <spdlog/spdlog.h>
+
+#include <csignal>
 #include <iostream>
 
 #include "Version.hpp"
 #include "api/ApiServer.hpp"
+#include "core/Bootstrap.hpp"
 #include "core/Config.hpp"
 #include "utils/LoggerFactory.hpp"
 
 int main()
 {
+    using namespace qga;
+
+    // === Header ===
+    std::cout << "===================================\n";
+    std::cout << " QuantGradesApp API\n";
+    std::cout << " Version: " << APP_VERSION << "\n";
+    std::cout << " Build date: " << APP_BUILD_DATE << "\n";
+    std::cout << "===================================\n\n";
+
     try
     {
-        auto& config = qga::core::Config::getInstance();
-        config.loadFromFile("config/config.json");
+        // === Bootstrap runtime ===
+        auto ctxOpt = core::bootstrapRuntime(std::filesystem::current_path());
+        if (!ctxOpt)
+        {
+            std::cerr << "[FATAL] API bootstrap failed\n";
+            return 1;
+        }
 
-        auto logger = qga::utils::LoggerFactory::createAsyncRotatingLogger(
-            "api", config.logFile().string(), config.logLevel(), config.logMaxSizeBytes(),
-            config.logMaxFiles());
+        auto& ctx = *ctxOpt;
+        auto& cfg = ctx.cfg;
 
-        logger->info("QuantumGradesApp API starting... version={}", APP_VERSION);
+        // === Logger (async) ===
+        auto logger = utils::LoggerFactory::createAsyncRotatingLogger(
+            "qga_api", ctx.logDir / cfg.logFile().filename(), cfg.logLevel(), cfg.logMaxSizeBytes(),
+            cfg.logMaxFiles());
 
-        qga::api::ApiServer server(logger, config);
+        ctx.cfg.setLogger(logger);
+        logger->info("QuantGradesApp API starting... version={}", APP_VERSION);
+
+        qga::api::ApiServer server(logger, cfg);
+
+        // ---- graceful shutdown ----
+        std::signal(SIGINT,
+                    [](int)
+                    {
+                        spdlog::shutdown();
+                        std::exit(0);
+                    });
+
+        std::signal(SIGTERM,
+                    [](int)
+                    {
+                        spdlog::shutdown();
+                        std::exit(0);
+                    });
         server.start();
     }
     catch (const std::exception& e)

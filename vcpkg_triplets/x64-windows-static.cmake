@@ -1,5 +1,5 @@
 # ========================================================================
-# Custom triplet for QuantumGradesApp - Pure MSVC build, no MSYS2
+# Custom triplet for QuantGradesApp - Pure MSVC build, no MSYS2
 # ========================================================================
 
 set(VCPKG_TARGET_ARCHITECTURE x64)
