@@ -15,7 +15,7 @@ int main()
 
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantGradesApp\n";
+    std::cout << " QuantGradesApp API\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
