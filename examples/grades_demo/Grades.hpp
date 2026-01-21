@@ -4,10 +4,11 @@
  */
 #pragma once
 
-#include "utils/ILogger.hpp" // ✅ pełny include, zapewnia definicję qga::utils::ILogger
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "utils/ILogger.hpp" // ✅ pełny include, zapewnia definicję qga::utils::ILogger
 
 namespace qga::core
 {
@@ -23,13 +24,6 @@ namespace qga::core
     class Grades
     {
       private:
-        /**
-         * @brief Internal logger instance for demo output.
-         * Used to log informational messages during Grades operations.
-         * Created via LoggerFactory (async SpdLogger).
-         */
-        std::shared_ptr<::qga::utils::ILogger> logger_; ///< ✅ teraz poprawnie widoczne
-
         std::vector<int> notes_; ///< Container holding all grades.
 
       public:

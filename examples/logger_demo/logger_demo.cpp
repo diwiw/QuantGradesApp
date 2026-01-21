@@ -19,7 +19,7 @@ int main()
 {
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantGradesApp Backtest\n";
+    std::cout << " QuantGradesApp Logger Demo\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
@@ -40,12 +40,14 @@ int main()
     if (!spdlog::thread_pool())
         spdlog::init_thread_pool(8192, 1); // start async thread pool
 
-    auto logger =
-        std::make_shared<SpdLogger>("LoggerDemo",
-                                    std::vector<std::shared_ptr<spdlog::sinks::sink>>{
-                                        std::make_shared<spdlog::sinks::stdout_color_sink_mt>()},
-                                    true // async
-        );
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        (ctx.logDir / cfg.logFile().filename()).string(), true);
+
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto logger = std::make_shared<SpdLogger>(
+        "LoggerDemo", std::vector<std::shared_ptr<spdlog::sinks::sink>>{console_sink, file_sink},
+        true // async
+    );
 
     logger->setLevel(cfg.logLevel());
 
@@ -59,7 +61,7 @@ int main()
     // ===== 3. Ingest Data =====
     qga::ingest::DataIngest ingest(logger);
 
-    const auto demo_csv = cfg.dataDir() / "demo.csv";
+    const auto demo_csv = *ctx.assetsDir / "demo.csv";
 
     auto series = ingest.fromCsv(demo_csv.string());
     if (!series.has_value())
@@ -77,10 +79,10 @@ int main()
     try
     {
         namespace fs = std::filesystem;
-        fs::create_directories(cfg.dataDir()); // ensure output dir exists
+        // fs::create_directories(cfg.dataDir()); // ensure output dir exists
 
-        auto csv_path = cfg.dataDir() / "build/demo_out.csv";
-        auto json_path = cfg.dataDir() / "demo_out.json";
+        auto csv_path = ctx.dataDir / "demo_out.csv";
+        auto json_path = ctx.dataDir / "demo_out.json";
         io::DataExporter exporter_csv(csv_path, logger, io::ExportFormat::CSV, false);
         exporter_csv.exportAll(*series);
 
@@ -94,7 +96,7 @@ int main()
         logger->error("Exporter exception: {}", ex.what());
     }
 
-    logger->info("Demo finished.");
+    logger->info("APP] Logger demo finished successfully.");
     logger->flush();
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); //
     spdlog::shutdown();                                          // cleanup spdlog

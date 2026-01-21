@@ -1,6 +1,13 @@
 #pragma once
 #include "core/IAppCLI.hpp"
 
+/**
+ * NOTE (bootstrap):
+ * This CLI implementation directly orchestrates domain, ingest and IO layers.
+ * This is intentional for 1.0.0 bootstrap and will be refactored into
+ * an application service layer in milestone 1.1/1.0.5.
+ */
+
 namespace qga::cli
 {
 

@@ -24,7 +24,7 @@ int main()
 {
     // === Header ===
     std::cout << "===================================\n";
-    std::cout << " QuantGradesApp Config_Grades\n";
+    std::cout << " QuantGradesApp Grades Demo\n";
     std::cout << " Version: " << APP_VERSION << "\n";
     std::cout << " Build date: " << APP_BUILD_DATE << "\n";
     std::cout << "===================================\n\n";
@@ -108,7 +108,7 @@ int main()
         std::cout << line << "\n";
 
     logger->info("[FileManager] File read successfully: {}", readPath.string());
-    logger->info("[APP] Application finished successfully.");
+    logger->info("[APP] Grades demo finished successfully.");
 
     return 0;
 }

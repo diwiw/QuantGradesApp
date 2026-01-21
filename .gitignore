@@ -41,7 +41,7 @@ tools/tmp/
 tools/local/
 
 # Generated data
-data/grades.txt
+data/
 
 # test artifacts
 test_tmp_export/
