@@ -2,23 +2,35 @@
 
 #include "Version.hpp"
 #include "api/ApiServer.hpp"
+#include "core/Bootstrap.hpp"
 #include "core/Config.hpp"
 #include "utils/LoggerFactory.hpp"
 
 int main()
 {
+    using namespace qga;
+
     try
     {
-        auto& config = qga::core::Config::getInstance();
-        config.loadFromFile("config/config.json");
+        // === Bootstrap runtime ===
+        auto ctxOpt = core::bootstrapRuntime(std::filesystem::current_path());
+        if (!ctxOpt)
+        {
+            std::cerr << "[FATAL] API bootstrap failed\n";
+            return 1;
+        }
 
-        auto logger = qga::utils::LoggerFactory::createAsyncRotatingLogger(
-            "api", config.logFile().string(), config.logLevel(), config.logMaxSizeBytes(),
-            config.logMaxFiles());
+        auto& ctx = *ctxOpt;
 
+        // === Logger (async) ===
+        auto logger = utils::LoggerFactory::createAsyncRotatingLogger(
+            "api", (ctx.logDir / "qga_api.log").string(), ctx.cfg.logLevel(),
+            ctx.cfg.logMaxSizeBytes(), ctx.cfg.logMaxFiles());
+
+        ctx.cfg.setLogger(logger);
         logger->info("QuantGradesApp API starting... version={}", APP_VERSION);
 
-        qga::api::ApiServer server(logger, config);
+        qga::api::ApiServer server(logger, ctx.cfg);
         server.start();
     }
     catch (const std::exception& e)
