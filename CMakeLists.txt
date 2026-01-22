@@ -104,10 +104,34 @@ endif()
 include(FetchContent)
 
 # ---- fmt ----------------------------------------------------
-find_package(fmt CONFIG REQUIRED)
+find_package(fmt CONFIG QUIET)
+
+if(NOT fmt_FOUND)
+    message(STATUS "fmt not found via CONFIG, trying system / FetchContent")
+
+    include(FetchContent)
+    FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 12.1.0
+    )
+    FetchContent_MakeAvailable(fmt)
+endif()
 
 # ---- spdlog -------------------------------------------------
-find_package(spdlog CONFIG REQUIRED)
+find_package(spdlog CONFIG QUIET)
+
+if(NOT spdlog_FOUND)
+    message(STATUS "spdlog not found via CONFIG, trying system / FetchContent")
+
+    include(FetchContent)
+    FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG 1.17.0
+    )
+    FetchContent_MakeAvailable(spdlog)
+endif()
 
 # ---- CURL ---------------------------------------------------
 find_package(CURL REQUIRED)
