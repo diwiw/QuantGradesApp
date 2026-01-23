@@ -64,6 +64,7 @@ jobs:
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
+            -DBUILD_API=ON \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DBUILD_EXAMPLES=ON \
             -DBUILD_DOCS=OFF \
@@ -183,6 +184,7 @@ jobs:
       - name: Configure (TSan)
         run: |
           cmake -S . -B build-tsan -G Ninja \
+            -DBUILD_API=ON \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DENABLE_TSAN=ON \
             -DCMAKE_C_COMPILER=clang \
@@ -393,7 +395,7 @@ jobs:
           link /? || exit 0
           echo =====================
 
-          cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -DCMAKE_MAKE_PROGRAM=C:\\ninja\\ninja.exe -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\toolchains\\windows.cmake -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DCMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DVCPKG_LOG_LEVEL=trace -DVCPKG_CMAKE_SYSTEM_NAME=Windows -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF
+          cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -DCMAKE_MAKE_PROGRAM=C:\\ninja\\ninja.exe -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\toolchains\\windows.cmake -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DCMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DVCPKG_LOG_LEVEL=trace -DVCPKG_CMAKE_SYSTEM_NAME=Windows -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON
 
           echo === CMAKE CACHE DUMP ===
           type build\CMakeCache.txt || echo (no cache found)
@@ -427,7 +429,8 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
               -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-              -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF
+              -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF ^
+              -DBUILD_API=ON
           )
 
           REM === Build all targets ===
