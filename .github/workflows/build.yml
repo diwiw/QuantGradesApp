@@ -340,6 +340,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
             -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
             -DVCPKG_CRT_LINKAGE=static ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
             -DVCPKG_LIBRARY_LINKAGE=static ^
             -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
             -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
