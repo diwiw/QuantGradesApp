@@ -249,7 +249,7 @@ include(GNUInstallDirs)
 
 # Main binary (Linux / Windows aut)
 install(
-    TARGETS quantgrades RUNTIME DESTINATION .
+    TARGETS qga_api RUNTIME DESTINATION .
 )
 
 # Runtime layout (copied from repo/runtime → bundle/quantumgrades)
