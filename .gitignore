@@ -56,7 +56,17 @@ build/tests/
 # CTest logs
 Testing/
 
+# Bundle
+/bundle/
 
+# Release artifacts
+*.tar.gz
+*.zip
+*.sha256
+
+# Windows
+*.exe
+*.pdb
 
 # Documentation
 /docs/

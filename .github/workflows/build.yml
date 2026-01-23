@@ -3,12 +3,17 @@ name: CI • Build & Test
 on:
   push:
     branches: [ main, develop ]
+    tags:
+      - v*
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: write
+
 jobs:
   ubuntu-build:
-    name: 🐧 Ubuntu • Build & Test (with ccache)
+    name: Ubuntu • Build & Test (with ccache)
     runs-on: ubuntu-latest
 
     steps:
@@ -90,10 +95,10 @@ jobs:
         if: success()
         run: |
           if [ -f ./build/demo_db_logger_config ]; then
-            echo "🧩 Generating demo output files..."
+            echo "Generating demo output files..."
             ./build/demo_db_logger_config
           else
-            echo "⚠️ Skipping demo run (binary not found)"
+            echo "Skipping demo run (binary not found)"
           fi
         shell: bash
 
@@ -109,9 +114,38 @@ jobs:
             demo_out.json
           if-no-files-found: warn
 
+      # === Package bundle (Linux) ===
+      - name: Install bundle (Linux)
+        if: success()
+        run: |
+          rm -rf bundle
+          cmake --install build --prefix bundle/quantgrades
+          echo "Bundle tree:"
+          find bundle -maxdepth 3 -type f -print
+
+      - name: Create tar.gz (Linux)
+        if: success()
+        run: |
+          tar -czf quantgrades-linux-x64.tar.gz -C bundle quantgrades
+          ls -lh quantgrades-linux-x64.tar.gz
+
+      - name: SHA256 (Linux)
+        if: success()
+        run: sha256sum quantgrades-linux-x64.tar.gz > quantgrades-linux-x64.sha256
+
+      - name: Upload Linux bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantgrades-linux-bundle
+          path: |
+            quantgrades-linux-x64.tar.gz
+            quantgrades-linux-x64.sha256
+          if-no-files-found: error
+
 
   ubuntu-tsan:
-    name: 🧠 Ubuntu • ThreadSanitizer (TSan)
+    name: Ubuntu • ThreadSanitizer (TSan)
     runs-on: ubuntu-latest
     continue-on-error: true  # doesn't block merge, only reports errors
 
@@ -188,7 +222,7 @@ jobs:
 
 
   windows-build:
-    name: 🪟 Windows • Build & Test (MSVC + vcpkg + sccache)
+    name: Windows • Build & Test (MSVC + vcpkg + sccache)
     runs-on: windows-latest
 
     env:
@@ -223,20 +257,20 @@ jobs:
       - name: Install + Verify tools
         shell: cmd
         run: |
-          echo 🛠️ Installing Ninja...
+          echo Installing Ninja...
           curl -L -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
           mkdir C:\ninja
           tar -xf ninja.zip -C C:\ninja
           echo PATH=C:\ninja;%PATH%>> %GITHUB_ENV%
-          echo 🔎 Verifying tools...
+          echo Verifying tools...
           where cl
           cl /Bv || exit 0
           C:\ninja\ninja.exe --version
 
-      - name: 🧩 Install sccache (Windows)
+      - name: Install sccache (Windows)
         shell: cmd
         run: |
-          echo 📦 Installing sccache...
+          echo Installing sccache...
           curl -L -o sccache.zip https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-pc-windows-msvc.zip
           mkdir C:\sccache
           tar -xf sccache.zip -C C:\sccache
@@ -245,7 +279,7 @@ jobs:
               move %%D\sccache.exe C:\sccache\sccache.exe >nul 2>&1
           )
           echo PATH=C:\sccache;%PATH%>> %GITHUB_ENV%
-          echo ✅ sccache installed at C:\sccache
+          echo sccache installed at C:\sccache
           dir C:\sccache
           C:\sccache\sccache.exe --version
 
@@ -282,11 +316,11 @@ jobs:
       - name: Setup vcpkg manually
         shell: cmd
         run: |
-          echo 📥 Preparing vcpkg...
+          echo Preparing vcpkg...
 
           REM === Check for existing vcpkg directory ===
           if exist vcpkg (
-            echo ⚠️ Found existing vcpkg directory, cleaning it before fresh clone...
+            echo Found existing vcpkg directory, cleaning it before fresh clone...
             rmdir /s /q vcpkg
           )
 
@@ -304,7 +338,7 @@ jobs:
           )
 
           REM === Prepare environment for bootstrap ===
-          echo ⚙️ Bootstrapping vcpkg...
+          echo Bootstrapping vcpkg...
           set VCPKG_FORCE_SYSTEM_BINARIES=1
           set VCPKG_USE_SYSTEM_NINJA=1
           set PATH=C:\ninja;%PATH%
@@ -313,18 +347,18 @@ jobs:
           REM === Run bootstrap script ===
           .\bootstrap-vcpkg.bat -disableMetrics -verbose
           if %ERRORLEVEL% NEQ 0 (
-            echo ❌ vcpkg bootstrap failed!
+            echo vcpkg bootstrap failed!
             exit /b %ERRORLEVEL%
           )
 
-          echo ✅ vcpkg bootstrapped successfully.
+          echo vcpkg bootstrapped successfully.
           dir /b
           echo === VCPKG version check ===
           .\vcpkg version
 
 
        # === Verify tools ===
-      - name: 🔍 Verify compiler and Ninja
+      - name: Verify compiler and Ninja
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -341,7 +375,7 @@ jobs:
       - name: Configure (Windows)
         shell: cmd
         run: |
-          echo 🧩 Configuring project with MSVC + Ninja + vcpkg...
+          echo Configuring project with MSVC + Ninja + vcpkg...
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
 
           REM === Settings after MSVC activation ===
@@ -350,7 +384,7 @@ jobs:
           set PATH=C:\ninja;%VCTOOLS_BIN%;%VCPKG_ROOT%;%PATH%
           set VCPKG_NINJA_PATH=C:\ninja\ninja.exe
           set VCPKG_USE_SYSTEM_NINJA=1
-          echo ✅ Updated PATH:
+          echo Updated PATH:
           echo %PATH%
           where cl
           where link
@@ -452,6 +486,41 @@ jobs:
             build\vcpkg-manifest-install.log
           if-no-files-found: ignore
 
+      # === Package bundle (Windows) ===
+      - name: 📦 Install bundle (Windows)
+        if: success()
+        shell: cmd
+        run: |
+          rmdir /s /q bundle 2>nul || echo (no bundle dir)
+          cmake --install build --prefix bundle\quantgrades
+          echo Bundle tree:
+          dir /s /b bundle
+
+      - name: 🗜️ Create zip (Windows)
+        if: success()
+        shell: powershell
+        run: |
+          Compress-Archive bundle\quantgrades quantgrades-windows-x64.zip
+          Get-Item quantgrades-windows-x64.zip | Format-List *
+
+      - name: 🔐 SHA256 (Windows)
+        if: success()
+        shell: powershell
+        run: |
+          Get-FileHash quantgrades-windows-x64.zip -Algorithm SHA256 | Format-List > quantgrades-windows-x64.sha256
+          Get-Content quantgrades-windows-x64.sha256
+
+      - name: ⬆️ Upload Windows bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantgrades-windows-bundle
+          path: |
+            quantgrades-windows-x64.zip
+            quantgrades-windows-x64.sha256
+          if-no-files-found: error
+
+       # === Failure logs ===
 
       - name: Upload Compiler Detection Logs
         if: failure()

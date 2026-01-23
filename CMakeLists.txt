@@ -240,3 +240,30 @@ add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/generated
     COMMENT "🧹 Cleaning build artifacts..."
 )
+
+# ============================================================
+# 📦 INSTALL / PACKAGING (runtime bundle)
+# ============================================================
+
+include(GNUInstallDirs)
+
+# Main binary (Linux / Windows aut)
+install(
+    TARGETS quantgrades RUNTIME DESTINATION .
+)
+
+# Runtime layout (copied from repo/runtime → bundle/quantumgrades)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/config
+    DESTINATION .
+)
+
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/data
+    DESTINATION .
+)
+
+install(
+    FILES ${CMAKE_SOURCE_DIR}/runtime/README.md
+    DESTINATION .
+)

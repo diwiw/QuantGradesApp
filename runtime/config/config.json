@@ -1,0 +1,5 @@
+{
+    "log_level": "info",
+    "data_path": "data",
+    "output_path": "output"
+}
