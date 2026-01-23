@@ -309,12 +309,12 @@ jobs:
             -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
             -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
             -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\toolchains\windows.cmake ^
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
-            -DVCPKG_LOG_LEVEL=trace ^
-            -DVCPKG_CMAKE_SYSTEM_NAME=Windows ^
-            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON
+            -DVCPKG_CRT_LINKAGE=static ^
+            -DVCPKG_LIBRARY_LINKAGE=static ^
+            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           type build\CMakeCache.txt || echo (no cache found)
+
 
       - name: Debug toolchain (MSVC + Ninja)
         shell: cmd
@@ -330,20 +330,17 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-
-          REM -- Use cloned vcpkg
           set VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg
           set PATH=C:\ninja;%VCPKG_ROOT%;%PATH%
 
-          REM -- Clean build to avoid old cache
           rmdir /s /q build 2>nul || echo (no build dir)
 
-          REM -- Full configure (ensures build.ninja)
           cmake -S . -B build -G "Ninja" ^
             -DCMAKE_BUILD_TYPE=Release ^
             -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
             -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
             -DVCPKG_CRT_LINKAGE=static ^
+            -DVCPKG_LIBRARY_LINKAGE=static ^
             -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
             -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
@@ -367,6 +364,7 @@ jobs:
           dir /b build\*.exe || echo No .exe files found.
           echo Listing PDBs...
           dir /b build\*.pdb || echo No .pdb files found.
+
 
       - name: Run Tests
         shell: cmd
