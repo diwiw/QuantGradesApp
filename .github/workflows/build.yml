@@ -330,20 +330,37 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          if not exist build (
-            mkdir build
+
+          REM -- Zawsze (re)configure, żeby mieć pewność że build.ninja powstanie
+          cmake -S . -B build -G "Ninja" ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF ^
+            -DBUILD_API=ON ^
+            -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+          IF %ERRORLEVEL% NEQ 0 (
+            echo === CMake logs ===
+            type build\CMakeFiles\CMakeOutput.log || echo (no CMakeOutput.log)
+            type build\CMakeFiles\CMakeError.log  || echo (no CMakeError.log)
+            exit /b 1
           )
-          if not exist build\CMakeCache.txt (
-            cmake -S . -B build -G "Ninja" ^
-              -DCMAKE_BUILD_TYPE=Release ^
-              -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
-              -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-              -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF ^
-              -DBUILD_API=ON
+
+          IF NOT EXIST build\build.ninja (
+            echo ❌ build.ninja missing after configure
+            dir /b build
+            exit /b 1
           )
-          cmake --build build --config Release --parallel
+
+          cmake --build build --parallel --verbose
+
+          echo Listing executables...
           dir /b build\*.exe || echo No .exe files found.
+          echo Listing PDBs...
           dir /b build\*.pdb || echo No .pdb files found.
+
 
       - name: Run Tests
         shell: cmd
