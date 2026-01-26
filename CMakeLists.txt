@@ -6,7 +6,7 @@ project(QuantGradesApp LANGUAGES CXX)
 # ============================================================
 if(MSVC)
     # 1. Force Runtime Library to DLL (/MD)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:DebugDLL>")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
     # 2. Remove any /MT flags that may have been added automatically
     foreach(flag_var
