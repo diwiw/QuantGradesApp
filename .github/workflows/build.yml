@@ -196,22 +196,12 @@ jobs:
     runs-on: windows-latest
 
     env:
-      VCPKG_FORCE_SYSTEM_BINARIES: 1
-      VCPKG_USE_SYSTEM_NINJA: 1
-      VCPKG_DISABLE_METRICS: 1
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+      VCPKG_OVERLAY_TRIPLETS: ${{ github.workspace }}\vcpkg_triplets
       VCPKG_DEFAULT_TRIPLET: x64-windows-static
-      CMAKE_BUILD_TYPE: Release
-      VCPKG_TARGET_TRIPLET: x64-windows-static
-      CMAKE_MAKE_PROGRAM: C:\ninja\ninja.exe
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
       SCCACHE_DIR: C:\sccache
       SCCACHE_LOG: error
-      CMAKE_VERBOSE_MAKEFILE: 1
-      CMAKE_MESSAGE_LOG_LEVEL: VERBOSE
-      VCPKG_FEATURE_FLAGS: "manifests,versions,registries"
-      VCPKG_LOG_LEVEL: trace
-      VCPKG_KEEP_ENV_VARS: PATH;INCLUDE;LIB;LIBPATH;VSCMD_ARG_TGT_ARCH;VSCMD_VER;Platform
-      VCPKG_ENV_PASSTHROUGH: PATH;INCLUDE;LIB;LIBPATH
-      CMAKE_BUILD_PARALLEL_LEVEL: 2
 
     steps:
       - name: Checkout
@@ -222,27 +212,22 @@ jobs:
         with:
           arch: x64
 
-      - name: Install + Verify tools
+      - name: Install Ninja
         shell: cmd
         run: |
           curl -L -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
           mkdir C:\ninja
           tar -xf ninja.zip -C C:\ninja
-          echo PATH=C:\ninja;%PATH%>> %GITHUB_ENV%
-          where cl
-          cl /Bv || exit 0
-          C:\ninja\ninja.exe --version
+          echo C:\ninja>> %GITHUB_PATH%
 
-      - name: Install sccache (Windows)
+      - name: Install sccache
         shell: cmd
         run: |
           curl -L -o sccache.zip https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-pc-windows-msvc.zip
           mkdir C:\sccache
           tar -xf sccache.zip -C C:\sccache
           for /d %%D in (C:\sccache\sccache-v*) do (move %%D\sccache.exe C:\sccache\sccache.exe >nul 2>&1)
-          echo PATH=C:\sccache;%PATH%>> %GITHUB_ENV%
-          C:\sccache\sccache.exe --version
-          rmdir /s /q C:\sccache\sccache-v0.8.2-x86_64-pc-windows-msvc || echo (no subfolder to remove)
+          echo C:\sccache>> %GITHUB_PATH%
 
       - name: Cache sccache
         uses: actions/cache@v4
@@ -250,11 +235,6 @@ jobs:
           path: C:\sccache
           key: ${{ runner.os }}-sccache-${{ hashFiles('**/*.cpp', '**/*.hpp', '**/CMakeLists.txt') }}
           restore-keys: ${{ runner.os }}-sccache-
-
-      - name: Reset sccache stats
-        if: always()
-        shell: cmd
-        run: C:\sccache\sccache.exe --zero-stats || echo (no stats to reset)
 
       - name: Cache vcpkg
         uses: actions/cache@v4
@@ -273,143 +253,42 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           git checkout 62324000504cdd27282f8275c99135cfb2bd1dc0
-          set VCPKG_FORCE_SYSTEM_BINARIES=1
-          set VCPKG_USE_SYSTEM_NINJA=1
-          set PATH=C:\ninja;%PATH%
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          .\bootstrap-vcpkg.bat -disableMetrics -verbose
-          .\vcpkg version
+          .\bootstrap-vcpkg.bat -disableMetrics
 
-      - name: Verify compiler and Ninja
+      - name: Verify Tools
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           where cl
-          cl /Bv
           where ninja
-          ninja --version
-          where link
-          link /? || exit 0
           where sccache
-          C:\sccache\sccache.exe --show-stats
+          cl /Bv
+          ninja --version
 
       - name: Configure (Windows)
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg
-          set VCTOOLS_BIN=%VCToolsInstallDir%bin\Hostx64\x64
-          set PATH=C:\ninja;%VCTOOLS_BIN%;%VCPKG_ROOT%;%PATH%
-          set VCPKG_NINJA_PATH=C:\ninja\ninja.exe
-          set VCPKG_USE_SYSTEM_NINJA=1
           cmake -S . -B build -G "Ninja" ^
             -DCMAKE_BUILD_TYPE=Release ^
-            -DCMAKE_VERBOSE_MAKEFILE=ON ^
-            -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE ^
-            -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
-            -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+            -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
             -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-            -DVCPKG_CRT_LINKAGE=static ^
-            -DVCPKG_LIBRARY_LINKAGE=static ^
+            -DVCPKG_OVERLAY_TRIPLETS=%GITHUB_WORKSPACE%\vcpkg_triplets ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
             -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          type build\CMakeCache.txt || echo (no cache found)
-
-
-      - name: Debug toolchain (MSVC + Ninja)
-        shell: cmd
-        run: |
-          echo === PATH ===
-          echo %PATH%
-          where cl
-          cl /Bv
-          where ninja
-          ninja --version
 
       - name: Build (Release)
         shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg
-          set PATH=C:\ninja;%VCPKG_ROOT%;%PATH%
-
-          rmdir /s /q build 2>nul || echo (no build dir)
-
-          cmake -S . -B build -G "Ninja" ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-            -DVCPKG_CRT_LINKAGE=static ^
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
-            -DVCPKG_LIBRARY_LINKAGE=static ^
-            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
-            -DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe ^
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-          IF %ERRORLEVEL% NEQ 0 (
-            echo === CMake logs ===
-            type build\CMakeFiles\CMakeOutput.log || echo (no CMakeOutput.log)
-            type build\CMakeFiles\CMakeError.log  || echo (no CMakeError.log)
-            exit /b 1
-          )
-
-          IF NOT EXIST build\build.ninja (
-            echo ❌ build.ninja missing after configure
-            dir /b build
-            exit /b 1
-          )
-
-          cmake --build build --parallel --verbose
-
-          echo Listing executables...
-          dir /b build\*.exe || echo No .exe files found.
-          echo Listing PDBs...
-          dir /b build\*.pdb || echo No .pdb files found.
-
+        run: cmake --build build --parallel
 
       - name: Run Tests
         shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          ctest --test-dir build --output-on-failure -V
-
-      - name: Show sccache stats
-        if: always()
-        shell: cmd
-        run: C:\sccache\sccache.exe --show-stats || echo (no sccache found)
-
-      - name: Generate and Upload Demo Outputs
-        if: success()
-        shell: cmd
-        run: |
-          if exist build\demo_db_logger_config.exe (
-            build\demo_db_logger_config.exe
-          ) else (
-            echo (demo not found)
-          )
-
-      - name: Upload Build Artifacts
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: QuantGradesApp-Windows-${{ github.run_number }}
-          path: |
-            build\*.exe
-            build\*.pdb
-            build\demo_out.csv
-            build\demo_out.json
-            demo_out.csv
-            demo_out.json
-            build\Testing\Temporary\LastTest.log
-            build\CMakeCache.txt
-            build\vcpkg-manifest-install.log
-          if-no-files-found: ignore
+        run: ctest --test-dir build --output-on-failure -V
 
       - name: Install bundle (Windows)
         if: success()
         shell: cmd
         run: |
-          rmdir /s /q bundle 2>nul || echo (no bundle dir)
+          rmdir /s /q bundle 2>nul
           cmake --install build --prefix bundle\quantgrades_api
           echo Bundle tree:
           dir /s /b bundle
