@@ -196,7 +196,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+      # Define paths relative to workspace to avoid spaces in paths
       VCPKG_OVERLAY_TRIPLETS: ${{ github.workspace }}\vcpkg_triplets
       VCPKG_DEFAULT_TRIPLET: x64-windows-static
       CMAKE_BUILD_PARALLEL_LEVEL: 2
@@ -255,40 +255,24 @@ jobs:
           git checkout 62324000504cdd27282f8275c99135cfb2bd1dc0
           .\bootstrap-vcpkg.bat -disableMetrics
 
-      - name: Verify Tools
-        shell: cmd
-        run: |
-          where cl
-          where ninja
-          where sccache
-          cl /Bv
-          ninja --version
-
       - name: Configure (Windows)
         shell: cmd
         run: |
-          echo 🧩 Configuring project with MSVC + Ninja + vcpkg...
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          REM Override VCPKG_ROOT to local workspace to avoid "Program Files" spaces from VS
+          set "VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg"
+          set "VCPKG_USE_SYSTEM_NINJA=1"
 
-          REM === Settings after MSVC activation ===
-          set VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg
-          set VCTOOLS_BIN=%VCToolsInstallDir%bin\Hostx64\x64
-          set PATH=C:\ninja;%VCTOOLS_BIN%;%VCPKG_ROOT%;%PATH%
-          set VCPKG_NINJA_PATH=C:\ninja\ninja.exe
-          set VCPKG_USE_SYSTEM_NINJA=1
-          echo ✅ Updated PATH:
-          echo %PATH%
-          where cl
-          where link
-          where ninja
-          ninja --version
-          link /? || exit 0
-          echo =====================
+          echo Using VCPKG_ROOT: %VCPKG_ROOT%
 
-          cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -DCMAKE_MAKE_PROGRAM=C:\\ninja\\ninja.exe -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\toolchains\\windows.cmake -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DCMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DVCPKG_LOG_LEVEL=trace -DVCPKG_CMAKE_SYSTEM_NAME=Windows -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF
-
-          echo === CMAKE CACHE DUMP ===
-          type build\CMakeCache.txt || echo (no cache found)
+          cmake -S . -B build -G "Ninja" ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            "-DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+            "-DVCPKG_OVERLAY_TRIPLETS=%GITHUB_WORKSPACE%\vcpkg_triplets" ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
+            "-DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe" ^
+            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Build (Release)
         shell: cmd
@@ -298,29 +282,37 @@ jobs:
         shell: cmd
         run: ctest --test-dir build --output-on-failure -V
 
-      - name: Install bundle (Windows)
+      - name: Install and Assemble Bundle (Windows)
         if: success()
         shell: cmd
         run: |
           rmdir /s /q bundle 2>nul
+          REM 1. Install executables via CMake
           cmake --install build --prefix bundle\quantgrades_api
-          echo Bundle tree:
+
+          REM 2. Manually copy files required by Issue #197
+          echo Copying documentation and configs...
+          copy README.md bundle\quantgrades_api\ 2>nul || echo (README.md not found)
+          copy config.json bundle\quantgrades_api\ 2>nul || echo (config.json not found)
+          copy *.csv bundle\quantgrades_api\ 2>nul || echo (No CSV files found in root)
+
+          echo Final Bundle Content:
           dir /s /b bundle
 
       - name: Create zip (Windows)
         if: success()
         shell: powershell
         run: |
-          Compress-Archive bundle\quantgrades_api quantgrades_api-windows-x64.zip
-          Get-Item quantgrades_api-windows-x64.zip | Format-List *
+          Compress-Archive bundle\quantgrades_api quantgrades-windows-x64.zip
+          Get-Item quantgrades-windows-x64.zip | Format-List *
 
       - name: SHA256 (Windows)
         if: success()
         shell: powershell
         run: |
-          $h = (Get-FileHash quantgrades_api-windows-x64.zip -Algorithm SHA256).Hash
-          "$h  quantgrades_api-windows-x64.zip" | Out-File -Encoding ascii -FilePath quantgrades_api-windows-x64.sha256
-          type quantgrades_api-windows-x64.sha256
+          $h = (Get-FileHash quantgrades-windows-x64.zip -Algorithm SHA256).Hash
+          "$h  quantgrades-windows-x64.zip" | Out-File -Encoding ascii -FilePath quantgrades-windows-x64.sha256
+          type quantgrades-windows-x64.sha256
 
       - name: Upload Windows bundle
         if: success()
@@ -328,8 +320,8 @@ jobs:
         with:
           name: quantgrades_api-windows-bundle
           path: |
-            quantgrades_api-windows-x64.zip
-            quantgrades_api-windows-x64.sha256
+            quantgrades-windows-x64.zip
+            quantgrades-windows-x64.sha256
           if-no-files-found: error
 
       - name: Upload Compiler Detection Logs
