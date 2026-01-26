@@ -267,11 +267,28 @@ jobs:
       - name: Configure (Windows)
         shell: cmd
         run: |
-          set "VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg"
-          set "VCPKG_USE_SYSTEM_NINJA=1"
-          echo VCPKG_ROOT set to: %VCPKG_ROOT%
+          echo 🧩 Configuring project with MSVC + Ninja + vcpkg...
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+
+          REM === Settings after MSVC activation ===
+          set VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg
+          set VCTOOLS_BIN=%VCToolsInstallDir%bin\Hostx64\x64
+          set PATH=C:\ninja;%VCTOOLS_BIN%;%VCPKG_ROOT%;%PATH%
+          set VCPKG_NINJA_PATH=C:\ninja\ninja.exe
+          set VCPKG_USE_SYSTEM_NINJA=1
+          echo ✅ Updated PATH:
+          echo %PATH%
+          where cl
+          where link
+          where ninja
+          ninja --version
+          link /? || exit 0
+          echo =====================
 
           cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -DCMAKE_MAKE_PROGRAM=C:\\ninja\\ninja.exe -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\\vcpkg\\scripts\\toolchains\\windows.cmake -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DCMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe" -DVCPKG_LOG_LEVEL=trace -DVCPKG_CMAKE_SYSTEM_NAME=Windows -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF
+
+          echo === CMAKE CACHE DUMP ===
+          type build\CMakeCache.txt || echo (no cache found)
 
       - name: Build (Release)
         shell: cmd
