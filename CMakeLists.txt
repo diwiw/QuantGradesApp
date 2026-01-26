@@ -1,8 +1,28 @@
 cmake_minimum_required(VERSION 3.27)
 project(QuantGradesApp LANGUAGES CXX)
 
+# ============================================================
+# 🔧 WINDOWS FORCE FIX
+# ============================================================
 if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # 1. Force Runtime Library to DLL (/MD)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:DebugDLL>")
+
+    # 2. Remove any /MT flags that may have been added automatically
+    foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+
+        if(${flag_var} MATCHES "/MT")
+            string(REPLACE "/MT" "/MD" ${flag_var} "${${flag_var}}")
+        endif()
+        if(${flag_var} MATCHES "/MTd")
+            string(REPLACE "/MTd" "/MDd" ${flag_var} "${${flag_var}}")
+        endif()
+    endforeach()
+
+    # 3. For good measure add /MD
+    add_compile_options($<$<CONFIG:Release>:/MD> $<$<CONFIG:Debug>:/MDd>)
 endif()
 
 # ============================================================
