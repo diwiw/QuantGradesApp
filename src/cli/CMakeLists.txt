@@ -39,7 +39,7 @@ add_executable(qga_cli main_cli.cpp)
 target_link_libraries(qga_cli PRIVATE qga_cli_lib)
 
 # === 3. Optional sanitizers for debug builds ===
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT MSVC)
     target_compile_options(qga_cli PRIVATE -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(qga_cli PRIVATE -fsanitize=address)
 endif()

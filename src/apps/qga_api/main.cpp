@@ -35,8 +35,8 @@ int main()
 
         // === Logger (async) ===
         auto logger = utils::LoggerFactory::createAsyncRotatingLogger(
-            "qga_api", ctx.logDir / cfg.logFile().filename(), cfg.logLevel(), cfg.logMaxSizeBytes(),
-            cfg.logMaxFiles());
+            "qga_api", (ctx.logDir / cfg.logFile().filename()).string(), cfg.logLevel(),
+            cfg.logMaxSizeBytes(), cfg.logMaxFiles());
 
         ctx.cfg.setLogger(logger);
         logger->info("QuantGradesApp API starting... version={}", APP_VERSION);

@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.27)
 project(QuantGradesApp LANGUAGES CXX)
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # ============================================================
 # 🧩 Load version info
 # ============================================================
@@ -28,10 +32,6 @@ endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 if(MSVC)

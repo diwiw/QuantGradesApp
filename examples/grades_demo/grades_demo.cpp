@@ -43,7 +43,7 @@ int main()
 
     // === Initialize logger===
     auto logger = qga::utils::LoggerFactory::createLogger(
-        "GradesDemo", ctx.logDir / ctx.cfg.logFile().filename(), ctx.cfg.logLevel());
+        "GradesDemo", (ctx.logDir / ctx.cfg.logFile().filename()).string(), ctx.cfg.logLevel());
 
     logger->info("[APP] Started (cfg={})", ctx.configPath.string());
 
