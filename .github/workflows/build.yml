@@ -76,10 +76,10 @@ jobs:
           cp config.json build/ 2>/dev/null || true
           cp *.csv build/ 2>/dev/null || true
 
-          if [ -f ./build/demo_db_logger_config ]; then
+          if [ -f ./build/logger_demo ]; then
             echo "Generating demo output files..."
             cd build
-            ./demo_db_logger_config
+            ./logger_demo
           else
             echo "Skipping demo run (binary not found)"
             exit 1
@@ -277,10 +277,10 @@ jobs:
         if: success()
         shell: cmd
         run: |
-          if exist build\demo_db_logger_config.exe (
+          if exist build\logger_demo.exe (
             echo "Generating demo output files..."
             cd build
-            demo_db_logger_config.exe
+            logger_demo.exe
           ) else (
             echo "Skipping demo run (binary not found)"
           )
