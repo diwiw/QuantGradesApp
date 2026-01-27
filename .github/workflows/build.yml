@@ -20,13 +20,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-${{ hashFiles('vcpkg.json') }}
-          restore-keys: ${{ runner.os }}-apt-
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -79,7 +72,8 @@ jobs:
         run: |
           if [ -f ./build/demo_db_logger_config ]; then
             echo "Generating demo output files..."
-            ./build/demo_db_logger_config
+            cd build
+            ./demo_db_logger_config
           else
             echo "Skipping demo run (binary not found)"
           fi
@@ -93,8 +87,6 @@ jobs:
           path: |
             build/demo_out.csv
             build/demo_out.json
-            demo_out.csv
-            demo_out.json
           if-no-files-found: warn
 
       - name: Install bundle (Linux)
@@ -212,27 +204,17 @@ jobs:
         with:
           arch: x64
 
-      - name: Install Ninja
+      - name: Install Ninja & sccache
         shell: cmd
         run: |
-          curl -L -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
-          mkdir C:\ninja
-          tar -xf ninja.zip -C C:\ninja
-          echo C:\ninja>> %GITHUB_PATH%
-
-      - name: Install sccache
-        shell: cmd
-        run: |
-          curl -L -o sccache.zip https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-pc-windows-msvc.zip
-          mkdir C:\sccache
-          tar -xf sccache.zip -C C:\sccache
-          for /d %%D in (C:\sccache\sccache-v*) do (move %%D\sccache.exe C:\sccache\sccache.exe >nul 2>&1)
-          echo C:\sccache>> %GITHUB_PATH%
+          choco install ninja
+          choco install sccache
+          sccache --version
 
       - name: Cache sccache
         uses: actions/cache@v4
         with:
-          path: C:\sccache
+          path: C:\Users\runneradmin\AppData\Local\Mozilla\sccache
           key: ${{ runner.os }}-sccache-${{ hashFiles('**/*.cpp', '**/*.hpp', '**/CMakeLists.txt') }}
           restore-keys: ${{ runner.os }}-sccache-
 
@@ -281,6 +263,28 @@ jobs:
       - name: Run Tests
         shell: cmd
         run: ctest --test-dir build --output-on-failure -V
+
+      - name: Generate Demo Outputs
+        if: success()
+        shell: cmd
+        run: |
+          if exist build\demo_db_logger_config.exe (
+            echo "Generating demo output files..."
+            cd build
+            demo_db_logger_config.exe
+          ) else (
+            echo "Skipping demo run (binary not found)"
+          )
+
+      - name: Upload Demo Outputs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DemoOutputs-Windows-${{ github.run_number }}
+          path: |
+            build/*.csv
+            build/*.json
+          if-no-files-found: warn
 
       - name: Install and Assemble Bundle (Windows)
         if: success()
