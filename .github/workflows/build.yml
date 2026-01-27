@@ -73,12 +73,16 @@ jobs:
       - name: Generate and Upload Demo Outputs
         if: success()
         run: |
+          cp config.json build/ 2>/dev/null || true
+          cp *.csv build/ 2>/dev/null || true
+
           if [ -f ./build/demo_db_logger_config ]; then
             echo "Generating demo output files..."
             cd build
             ./demo_db_logger_config
           else
             echo "Skipping demo run (binary not found)"
+            exit 1
           fi
         shell: bash
 
