@@ -252,7 +252,6 @@ jobs:
             -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
             "-DVCPKG_OVERLAY_TRIPLETS=%GITHUB_WORKSPACE%\vcpkg_triplets" ^
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
-            "-DCMAKE_MAKE_PROGRAM=C:\ninja\ninja.exe" ^
             -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
