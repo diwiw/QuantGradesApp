@@ -73,15 +73,16 @@ jobs:
       - name: Generate and Upload Demo Outputs
         if: success()
         run: |
-          cp config.json build/ 2>/dev/null || true
-          cp *.csv build/ 2>/dev/null || true
+          cp config.json build/bin/ 2>/dev/null || true
+          cp *.csv build/bin/ 2>/dev/null || true
 
           if [ -f ./build/logger_demo ]; then
             echo "Generating demo output files..."
-            cd build
+            cd build/bin
             ./logger_demo
           else
-            echo "Skipping demo run (binary not found)"
+            echo "Skipping demo run (binary not found in build/bin)"
+            ls -R ../
             exit 1
           fi
         shell: bash
@@ -92,8 +93,8 @@ jobs:
         with:
           name: DemoOutputs-Ubuntu-${{ github.run_number }}
           path: |
-            build/demo_out.csv
-            build/demo_out.json
+            build/bin/demo_out.csv
+            build/bin/demo_out.json
           if-no-files-found: warn
 
       - name: Install bundle (Linux)
@@ -279,10 +280,12 @@ jobs:
         run: |
           if exist build\logger_demo.exe (
             echo "Generating demo output files..."
-            cd build
+            cd build\bin
             logger_demo.exe
           ) else (
-            echo "Skipping demo run (binary not found)"
+            echo "Skipping demo run (binary not found in build\bin)"
+            dir build /s
+            exit 1
           )
 
       - name: Upload Demo Outputs
@@ -291,8 +294,8 @@ jobs:
         with:
           name: DemoOutputs-Windows-${{ github.run_number }}
           path: |
-            build/*.csv
-            build/*.json
+            build/bin/*.csv
+            build/bin/*.json
           if-no-files-found: warn
 
       - name: Install and Assemble Bundle (Windows)
