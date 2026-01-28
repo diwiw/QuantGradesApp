@@ -93,6 +93,8 @@ jobs:
         with:
           name: DemoOutputs-Ubuntu-${{ github.run_number }}
           path: |
+            data/demo_out.csv
+            data/demo_out.json
             build/bin/demo_out.csv
             build/bin/demo_out.json
           if-no-files-found: warn
@@ -294,6 +296,8 @@ jobs:
         with:
           name: DemoOutputs-Windows-${{ github.run_number }}
           path: |
+            data/*.csv
+            data/*.json
             build/bin/*.csv
             build/bin/*.json
           if-no-files-found: warn

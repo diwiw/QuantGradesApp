@@ -75,7 +75,7 @@ int main()
         grade_lines.push_back(std::to_string(note));
     }
 
-    if (!qga::io::FileManager::writeAllLines(gradesOut, grade_lines))
+    if (!qga::io::FileManager::writeAllLines(gradesOut.string(), grade_lines))
     {
         logger->error("[FileManager] Failed to write {}", gradesOut.string());
         return 1;
@@ -87,7 +87,7 @@ int main()
     const auto readPath = *ctx.assetsDir / "readGrades.txt";
     logger->info("[FileManager] Reading assets file {}", readPath.string());
 
-    auto lines_opt = qga::io::FileManager::readAllLines(readPath);
+    auto lines_opt = qga::io::FileManager::readAllLines(readPath.string());
     if (!lines_opt.has_value())
     {
         logger->error("[FileManager] Failed to read {}", readPath.string());
