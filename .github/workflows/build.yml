@@ -280,7 +280,9 @@ jobs:
         if: success()
         shell: cmd
         run: |
-          if exist build\logger_demo.exe (
+          if not exist build\bin\data mkdir build\bin\data
+
+          if exist build\bin\logger_demo.exe (
             echo "Generating demo output files..."
             cd build\bin
             logger_demo.exe
@@ -298,6 +300,8 @@ jobs:
           path: |
             data/*.csv
             data/*.json
+            build/bin/data/*.csv
+            build/bin/data/*.json
             build/bin/*.csv
             build/bin/*.json
           if-no-files-found: warn
