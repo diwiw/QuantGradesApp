@@ -166,8 +166,19 @@ if(NOT spdlog_FOUND)
     FetchContent_MakeAvailable(spdlog)
 endif()
 
+# ---- FIX: WINDOWS STATIC LINKING -----------------------------
+if(WIN32)
+    set(OPENSSL_USE_STATIC_LIBS ON)
+    # Optionally: Helps if vcpkg uses static runtime
+    set(OPENSSL_MSVC_STATIC_RT ON)
+endif()
+
 # ---- CURL ---------------------------------------------------
 find_package(CURL REQUIRED)
+
+# ---- OpenSSL ------------------------------------------------
+# Add explicitly, to ensure, that static flags are correctly processed
+find_package(OpenSSL REQUIRED)
 
 # ---- SQLite3 -----------------------------------------------
 find_package(SQLite3 REQUIRED)
@@ -284,6 +295,14 @@ include(GNUInstallDirs)
 install(
     TARGETS qga_api RUNTIME DESTINATION .
 )
+
+# === Examples isntalations ===
+if(BUILD_EXAMPLES)
+    install(
+        TARGETS logger_demo backtest_demo grades_demo
+        RUNTIME DESTINATION examples
+    )
+endif()
 
 # Runtime layout (copied from repo/runtime → bundle/quantumgrades)
 install(

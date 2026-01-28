@@ -103,14 +103,14 @@ jobs:
         if: success()
         run: |
           rm -rf bundle
-          cmake --install build --prefix bundle/quantgrades
+          cmake --install build --prefix bundle/quantgrades_api
           echo "Bundle tree:"
           find bundle -maxdepth 3 -type f -print
 
       - name: Create tar.gz (Linux)
         if: success()
         run: |
-          tar -czf quantgrades-linux-x64.tar.gz -C bundle quantgrades
+          tar -czf quantgrades-linux-x64.tar.gz -C bundle quantgrades_api
           ls -lh quantgrades-linux-x64.tar.gz
 
       - name: SHA256 (Linux)
