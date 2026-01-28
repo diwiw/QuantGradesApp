@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.27)
 project(QuantGradesApp LANGUAGES CXX)
 
+# ============================================================
+# ⚙️ Output Directories (Fix for CI paths)
+# ============================================================
+# 1. Load standard catalogue definitions (bin, lib, etc.)
+include(GNUInstallDirs)
 
+# 2. Now the CMAKE_INSTALL_BINDIR variable is set to "bin", so this will work:
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
