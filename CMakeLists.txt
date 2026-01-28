@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.27)
 project(QuantGradesApp LANGUAGES CXX)
 
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+
 # ============================================================
 # 🔧 WINDOWS FORCE FIX
 # ============================================================
@@ -39,7 +44,7 @@ message(STATUS "🕓 Build date: ${QGA_BUILD_DATE}")
 
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(BUILD_DOCS "Build documentation with doxygen" OFF)
-option(BUILD_LEGACY_DEMOS "Build legacy demo targets (grades_demo, logger_demo)" OFF)
+option(BUILD_EXAMPLES "Build legacy demo targets (grades_demo, logger_demo)" OFF)
 option(BUILD_API "Build REST API server" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -89,10 +94,6 @@ set(TEST_DIR ${CMAKE_SOURCE_DIR}/tests)
 set(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)
 set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 set(DATA_DIR ${CMAKE_SOURCE_DIR}/data)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 include_directories(${INCLUDE_DIR} ${EXTERNAL_DIR})
 
@@ -228,7 +229,7 @@ endif()
 # ============================================================
 add_subdirectory(${EXAMPLES_DIR}/backtest_demo)
 
-if(BUILD_LEGACY_DEMOS)
+if(BUILD_EXAMPLES)
     add_subdirectory(${EXAMPLES_DIR}/grades_demo)
     add_subdirectory(${EXAMPLES_DIR}/logger_demo)
 endif()
@@ -272,10 +273,6 @@ add_custom_target(clean-all
 # ============================================================
 
 include(GNUInstallDirs)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 # Main binary (Linux / Windows aut)
 install(
