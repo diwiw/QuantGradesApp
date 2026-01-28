@@ -41,12 +41,12 @@ target_link_libraries(logger_demo PRIVATE
 
 
 target_compile_definitions(logger_demo PRIVATE
-    USE_CURL    
+    USE_CURL
 )
 
-set_target_properties(logger_demo PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+#set_target_properties(logger_demo PROPERTIES
+#    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+#)
 
 #add_executable(demo_db_logger_config ${SRC_FILES} ${EXAMPLES_DIR}/demo_db_logger_config.cpp)
 	#target_include_directories(demo_db_logger_config PRIVATE ${INCLUDE_DIR})
