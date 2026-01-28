@@ -76,13 +76,13 @@ jobs:
           cp config.json build/bin/ 2>/dev/null || true
           cp *.csv build/bin/ 2>/dev/null || true
 
-          if [ -f ./build/logger_demo ]; then
+          if [ -f ./build/bin/logger_demo ]; then
             echo "Generating demo output files..."
             cd build/bin
             ./logger_demo
           else
             echo "Skipping demo run (binary not found in build/bin)"
-            ls -R ../
+            ls -R build
             exit 1
           fi
         shell: bash
