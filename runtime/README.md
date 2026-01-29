@@ -11,4 +11,9 @@ quantgrades.exe
 Edit: config/config.json
 
 ## Example
-Sample CSV in data/example.csv
+
+### For grades_demo
+Sample CSV in data/readGrades.csv
+
+### For logger_demo
+Sample CSV in data/demo.csv

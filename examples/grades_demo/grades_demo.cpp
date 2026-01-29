@@ -67,7 +67,7 @@ int main()
     g.printSummary();
 
     // === Save grades ===
-    const auto gradesOut = ctx.dataDir / "grades.txt";
+    const auto gradesOut = ctx.dataDir / "grades_output.txt";
 
     std::vector<std::string> grade_lines;
     for (int note : g.getNotes())
@@ -84,7 +84,7 @@ int main()
     logger->info("[FileManager] Wrote {}", gradesOut.string());
 
     // === Read file ===
-    const auto readPath = *ctx.assetsDir / "readGrades.txt";
+    const auto readPath = *ctx.assetsDir / "grades_input.txt";
     logger->info("[FileManager] Reading assets file {}", readPath.string());
 
     auto lines_opt = qga::io::FileManager::readAllLines(readPath.string());

@@ -296,14 +296,6 @@ install(
     TARGETS qga_api RUNTIME DESTINATION .
 )
 
-# === Examples isntalations ===
-if(BUILD_EXAMPLES)
-    install(
-        TARGETS logger_demo backtest_demo grades_demo
-        RUNTIME DESTINATION examples
-    )
-endif()
-
 # Runtime layout (copied from repo/runtime → bundle/quantumgrades)
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/config
