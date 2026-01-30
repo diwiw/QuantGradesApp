@@ -22,7 +22,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-                "BUILD_LEGACY_DEMOS": "ON",
+                "BUILD_EXAMPLES": "ON",
                 "BUILD_API": "ON"
             }
         },
@@ -34,7 +34,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-                "BUILD_LEGACY_DEMOS": "ON",
+                "BUILD_EXAMPLES": "ON",
                 "BUILD_API": "ON"
             }
         },
@@ -57,7 +57,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-                "BUILD_LEGACY_DEMOS": "OFF",
+                "BUILD_EXAMPLES": "OFF",
                 "CMAKE_CXX_FLAGS": "-O2 -g -fno-omit-frame-pointer",
                 "CMAKE_C_FLAGS": "-O2 -g -fno-omit-frame-pointer",
                 "BUILD_API": "ON"

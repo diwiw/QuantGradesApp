@@ -61,7 +61,7 @@ int main()
     // ===== 3. Ingest Data =====
     qga::ingest::DataIngest ingest(logger);
 
-    const auto demo_csv = *ctx.assetsDir / "demo.csv";
+    const auto demo_csv = *ctx.assetsDir / "logger_input.csv";
 
     auto series = ingest.fromCsv(demo_csv.string());
     if (!series.has_value())
@@ -81,8 +81,8 @@ int main()
         namespace fs = std::filesystem;
         // fs::create_directories(cfg.dataDir()); // ensure output dir exists
 
-        auto csv_path = ctx.dataDir / "demo_out.csv";
-        auto json_path = ctx.dataDir / "demo_out.json";
+        auto csv_path = ctx.dataDir / "logger_out.csv";
+        auto json_path = ctx.dataDir / "logger_out.json";
         io::DataExporter exporter_csv(csv_path, logger, io::ExportFormat::CSV, false);
         exporter_csv.exportAll(*series);
 

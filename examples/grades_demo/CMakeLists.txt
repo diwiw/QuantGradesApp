@@ -33,9 +33,9 @@ target_link_libraries(grades_demo PRIVATE
 )
 
 target_compile_definitions(grades_demo PRIVATE
-    USE_CURL    
+    USE_CURL
 )
 
-set_target_properties(grades_demo PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+#set_target_properties(grades_demo PROPERTIES
+#    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+#)

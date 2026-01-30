@@ -39,7 +39,7 @@ int main()
 
     // === Initialize logger (from config)===
     auto logger = utils::LoggerFactory::createLogger(
-        "BacktestDemo", ctx.logDir / ctx.cfg.logFile().filename(), ctx.cfg.logLevel());
+        "BacktestDemo", (ctx.logDir / ctx.cfg.logFile().filename()).string(), ctx.cfg.logLevel());
 
     logger->info("[APP] Started (cfg={})", ctx.configPath.string());
 

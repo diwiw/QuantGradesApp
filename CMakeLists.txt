@@ -2,6 +2,41 @@ cmake_minimum_required(VERSION 3.27)
 project(QuantGradesApp LANGUAGES CXX)
 
 # ============================================================
+# ⚙️ Output Directories (Fix for CI paths)
+# ============================================================
+# 1. Load standard catalogue definitions (bin, lib, etc.)
+include(GNUInstallDirs)
+
+# 2. Now the CMAKE_INSTALL_BINDIR variable is set to "bin", so this will work:
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+
+# ============================================================
+# 🔧 WINDOWS FORCE FIX
+# ============================================================
+if(MSVC)
+    # 1. Force Runtime Library to DLL (/MD)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
+    # 2. Remove any /MT flags that may have been added automatically
+    foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+
+        if(${flag_var} MATCHES "/MT")
+            string(REPLACE "/MT" "/MD" ${flag_var} "${${flag_var}}")
+        endif()
+        if(${flag_var} MATCHES "/MTd")
+            string(REPLACE "/MTd" "/MDd" ${flag_var} "${${flag_var}}")
+        endif()
+    endforeach()
+
+    # 3. For good measure add /MD
+    add_compile_options($<$<CONFIG:Release>:/MD> $<$<CONFIG:Debug>:/MDd>)
+endif()
+
+# ============================================================
 # 🧩 Load version info
 # ============================================================
 include(${CMAKE_SOURCE_DIR}/cmake/version.cmake)
@@ -15,7 +50,7 @@ message(STATUS "🕓 Build date: ${QGA_BUILD_DATE}")
 
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(BUILD_DOCS "Build documentation with doxygen" OFF)
-option(BUILD_LEGACY_DEMOS "Build legacy demo targets (grades_demo, logger_demo)" OFF)
+option(BUILD_EXAMPLES "Build legacy demo targets (grades_demo, logger_demo)" OFF)
 option(BUILD_API "Build REST API server" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -30,7 +65,9 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
@@ -63,10 +100,6 @@ set(TEST_DIR ${CMAKE_SOURCE_DIR}/tests)
 set(EXAMPLES_DIR ${CMAKE_SOURCE_DIR}/examples)
 set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 set(DATA_DIR ${CMAKE_SOURCE_DIR}/data)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 include_directories(${INCLUDE_DIR} ${EXTERNAL_DIR})
 
@@ -133,8 +166,19 @@ if(NOT spdlog_FOUND)
     FetchContent_MakeAvailable(spdlog)
 endif()
 
+# ---- FIX: WINDOWS STATIC LINKING -----------------------------
+if(WIN32)
+    set(OPENSSL_USE_STATIC_LIBS ON)
+    # Optionally: Helps if vcpkg uses static runtime
+    set(OPENSSL_MSVC_STATIC_RT ON)
+endif()
+
 # ---- CURL ---------------------------------------------------
 find_package(CURL REQUIRED)
+
+# ---- OpenSSL ------------------------------------------------
+# Add explicitly, to ensure, that static flags are correctly processed
+find_package(OpenSSL REQUIRED)
 
 # ---- SQLite3 -----------------------------------------------
 find_package(SQLite3 REQUIRED)
@@ -202,7 +246,7 @@ endif()
 # ============================================================
 add_subdirectory(${EXAMPLES_DIR}/backtest_demo)
 
-if(BUILD_LEGACY_DEMOS)
+if(BUILD_EXAMPLES)
     add_subdirectory(${EXAMPLES_DIR}/grades_demo)
     add_subdirectory(${EXAMPLES_DIR}/logger_demo)
 endif()
@@ -240,3 +284,36 @@ add_custom_target(clean-all
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/generated
     COMMENT "🧹 Cleaning build artifacts..."
 )
+
+# ============================================================
+# 📦 INSTALL / PACKAGING (runtime bundle)
+# ============================================================
+
+# Main binary (Linux / Windows aut)
+if(TARGET qga_api)
+
+    # 1. Main app
+    install(TARGETS qga_api RUNTIME DESTINATION .)
+
+    # 2. Config from runtime
+    if(EXISTS "${CMAKE_SOURCE_DIR}/runtime/config")
+        install(
+            DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/config
+            DESTINATION .
+        )
+    endif()
+
+    # 3. README from runtime (This is the correct entry!)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/runtime/README.md")
+        message(STATUS "📦 Packaging: Adding user manual from runtime/README.md")
+        install(
+            FILES "${CMAKE_SOURCE_DIR}/runtime/README.md"
+            DESTINATION .
+            # Optionally: ensure the target name is README.md
+            RENAME README.md
+        )
+    else()
+        message(WARNING "⚠️ Runtime README not found at ${CMAKE_SOURCE_DIR}/runtime/README.md")
+    endif()
+
+endif()

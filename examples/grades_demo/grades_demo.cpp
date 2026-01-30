@@ -43,7 +43,7 @@ int main()
 
     // === Initialize logger===
     auto logger = qga::utils::LoggerFactory::createLogger(
-        "GradesDemo", ctx.logDir / ctx.cfg.logFile().filename(), ctx.cfg.logLevel());
+        "GradesDemo", (ctx.logDir / ctx.cfg.logFile().filename()).string(), ctx.cfg.logLevel());
 
     logger->info("[APP] Started (cfg={})", ctx.configPath.string());
 
@@ -67,7 +67,7 @@ int main()
     g.printSummary();
 
     // === Save grades ===
-    const auto gradesOut = ctx.dataDir / "grades.txt";
+    const auto gradesOut = ctx.dataDir / "grades_output.txt";
 
     std::vector<std::string> grade_lines;
     for (int note : g.getNotes())
@@ -75,7 +75,7 @@ int main()
         grade_lines.push_back(std::to_string(note));
     }
 
-    if (!qga::io::FileManager::writeAllLines(gradesOut, grade_lines))
+    if (!qga::io::FileManager::writeAllLines(gradesOut.string(), grade_lines))
     {
         logger->error("[FileManager] Failed to write {}", gradesOut.string());
         return 1;
@@ -84,10 +84,10 @@ int main()
     logger->info("[FileManager] Wrote {}", gradesOut.string());
 
     // === Read file ===
-    const auto readPath = *ctx.assetsDir / "readGrades.txt";
+    const auto readPath = *ctx.assetsDir / "grades_input.txt";
     logger->info("[FileManager] Reading assets file {}", readPath.string());
 
-    auto lines_opt = qga::io::FileManager::readAllLines(readPath);
+    auto lines_opt = qga::io::FileManager::readAllLines(readPath.string());
     if (!lines_opt.has_value())
     {
         logger->error("[FileManager] Failed to read {}", readPath.string());

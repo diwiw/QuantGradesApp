@@ -20,10 +20,8 @@ out.perf
 flame.svg
 profiling_output/
 
-# Data files (large raw datasets)
-data/*.csv
-data/*.qga.csv
-data/raw_*.csv
+# Data files (large raw datasets) and generated data
+/data/
 
 # Rnadom test-generated config files
 config.test.json
@@ -32,16 +30,13 @@ config.test.json
 *.test.json
 
 # Log Catalog
-logs/
+/logs/
 app.log
 *.log
 
 # Development tools
-tools/tmp/
-tools/local/
-
-# Generated data
-data/
+/tools/tmp/
+/tools/local/
 
 # test artifacts
 test_tmp_export/
@@ -56,7 +51,17 @@ build/tests/
 # CTest logs
 Testing/
 
+# Bundle
+/bundle/
 
+# Release artifacts
+*.tar.gz
+*.zip
+*.sha256
+
+# Windows
+*.exe
+*.pdb
 
 # Documentation
 /docs/

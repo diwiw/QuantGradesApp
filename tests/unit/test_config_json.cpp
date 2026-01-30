@@ -7,6 +7,22 @@
 #include "doctest.h"
 #include "unit_config.hpp"
 
+// --- FIX FOR WINDOWS START ---
+#ifdef _WIN32
+#include <string>
+
+//  _putenv_s
+int setenv(const char* name, const char* value, int overwrite)
+{
+    // On Windows _putenv_s returns 0 on success
+    return _putenv_s(name, value);
+}
+
+// Windows does not have unsetenv, set the variable to an empty string
+int unsetenv(const char* name) { return _putenv_s(name, ""); }
+#endif
+// --- FIX FOR WINDOWS END ---
+
 namespace fs = std::filesystem;
 using namespace qga::core;
 
