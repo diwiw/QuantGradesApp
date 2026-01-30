@@ -14,9 +14,5 @@
     },
     "engine": {
         "threads": 0
-    },
-    "//_comment": "Legacy fallback keys for older demos",
-    "log_level": "info",
-    "data_path": "data",
-    "output_path": "output"
+    }
 }

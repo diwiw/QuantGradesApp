@@ -289,20 +289,31 @@ add_custom_target(clean-all
 # 📦 INSTALL / PACKAGING (runtime bundle)
 # ============================================================
 
-include(GNUInstallDirs)
-
 # Main binary (Linux / Windows aut)
-install(
-    TARGETS qga_api RUNTIME DESTINATION .
-)
+if(TARGET qga_api)
 
-# Runtime layout (copied from repo/runtime → bundle/quantumgrades)
-install(
-    DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/config
-    DESTINATION .
-)
+    # 1. Main app
+    install(TARGETS qga_api RUNTIME DESTINATION .)
 
-install(
-    FILES ${CMAKE_SOURCE_DIR}/runtime/README.md
-    DESTINATION .
-)
+    # 2. Config from runtime
+    if(EXISTS "${CMAKE_SOURCE_DIR}/runtime/config")
+        install(
+            DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/config
+            DESTINATION .
+        )
+    endif()
+
+    # 3. README from runtime (This is the correct entry!)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/runtime/README.md")
+        message(STATUS "📦 Packaging: Adding user manual from runtime/README.md")
+        install(
+            FILES "${CMAKE_SOURCE_DIR}/runtime/README.md"
+            DESTINATION .
+            # Optionally: ensure the target name is README.md
+            RENAME README.md
+        )
+    else()
+        message(WARNING "⚠️ Runtime README not found at ${CMAKE_SOURCE_DIR}/runtime/README.md")
+    endif()
+
+endif()

@@ -323,7 +323,6 @@ jobs:
 
           REM 2. Manually copy files required by Issue #197
           echo Copying documentation and configs...
-          copy README.md bundle\quantgrades_api\ 2>nul || echo (README.md not found)
           copy config.json bundle\quantgrades_api\ 2>nul || echo (config.json not found)
           copy *.csv bundle\quantgrades_api\ 2>nul || echo (No CSV files found in root)
 
