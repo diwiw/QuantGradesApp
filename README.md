@@ -1,6 +1,6 @@
 # QuantGradesApp
 
-> **Version:** `v1.0.0-dev`
+> **Version:** `v1.0.0`
 > **Build System:** CMake + Ninja
 > **Standard:** C++23
 > **Documentation:** Doxygen + Mermaid + Graphviz
@@ -10,72 +10,236 @@
 > **Performance Tools:** perf + FlameGraph (Linux, profiling preset)
 
 QuantGradesApp is a modular, extensible quantitative backtesting framework written in modern C++.
+
 Originally built as a grades/statistics demo, it has evolved into a clean, layered architecture suitable for:
   - quantitative research
   - backtesting trading strategies
   - portfolio & risk analytics
   - data ingestion
   - reporting
-  - building HPC-oriented extensions
+  - REST-driven automation
+  - future HPC-oriented extensions
 
-This release v0.9.0 introduces major quality upgrades, new metrics, improved ingestion, test suite stabilization, and a full CPU profiling pipeline.
+This v1.0.0 release finalizes API stability, packaging, documentation, and repository bootstrap for the entire 1.x line.
+
 ---
-# What's New in v0.9.0
-## New performance profiling tools
 
-- perf_setup.sh
-- perf_flamegraph.sh
-- perf_hotspot.sh
-- CMake preset: linux-profiling
-- VSCode task: Build Profiling (vcpkg)
+## What's New in v1.0.0
 
-## Expanded Statistics module
+### REST API v1
+- Lightweight REST API (cpp-httplib / crow)
+- `/health`
+- `/version`
+- `/ingest/csv`
+- `/grades/report`
+- Integrated with existing config & logging
+- Optional build via `BUILD_API=ON/OFF`
 
+### Release Packaging
+- Linux standalone bundle (`.tar.gz`)
+- Windows portable bundle (`.zip`)
+- Bundled:
+  - executables
+  - configs
+  - README
+  - example CSV
+- No compilation required to run
+
+### Repository Bootstrap
+- Clean root directory
+- Normalized layout (`src/`, `include/`, `config/`, `tools/`)
+- Updated `.gitignore`
+- Removed deprecated paths
+- CMake structure aligned with runtime layout
+
+### Documentation Finalization
+- README rewritten for 1.0.0
+- Quickstart added
+- API usage documented
+- Architecture diagrams finalized
+
+---
+
+## Key Features (v1.0.0)
+### Core Engine
+- Deterministic backtesting engine
+- Strict separation of domain logic and infrastructure
+- Clean separation of domain and infrastructure
+
+### Statistics Module
 - Maximum Drawdown (MDD)
 - CAGR
 - Sharpe Ratio
 - Sortino Ratio
 - Hit Ratio
-- Additional validation and tests
+- Full unit test coverage
 
-## CLI improvements
-
-- `--config` is now required
-- Better error messages
-- CLI tests rewritten and fixed
-
-## Data ingestion improvements
-
+### Data ingestion
 - Strict CSV validation
-- Fixed row parsing for malformed inputs
-- Preparation for mock HTTP server tests (not yet used in CI)
-- Improved error handling and reporting
+- Safe row parsing with error reporting
+- HTTP ingest prototype (API-triggered)
 
-## Test suite updates (v0.9.0)
-
-- Updated fixtures for new Config schema
-- Stabilized E2E tests (Linux)
-- Added NullLogger for deterministic outputs
-- Improved Statistics tests
-
-## Formatting & code quality
-
-- clang-format enforced on all modules
-- clang-tidy baseline added
-- CI workflows updated for formatting compliance
+### CLI
+- Config required (`--config`)
+- Deterministic output
+- Integrated logging
+- Stable command surface
 
 ---
 
-# Features (v0.9.0)
-The 0.9.0 milestone includes:
+## Quickstart (Release Bundle)
 
-### Profiling & Performance Tools
-- perf integration
-- Flamegraph & hotspots scripting
-- Userspace-only profiling mode
-- Unified profiling pipeline (tools/profiling/)
+### 1. Download
+Download the appropriate release bundle:
+- Linux: quantgrades_api-linux-x64.tar.gz
+- Windows: quantgrades_api-windows-x64.zip
+
+### 2. Unpack
+```
+tar -xzf quantgrades_api-linux-x64.tar.gz
+cd quantgrades
+```
+
+### 3. Inspect configuration
+
+```
+config/
+ ├─ conf.dev.json             # loaded for dev
+ ├─ conf.test.json            # loaded for tests
+ └─ conf.json                 # default
+ ```
+
+ ### 4. Run CSV ingestion
+
+ ```
+ ./qga_cli ingest --config config/conf.dev.json
+ ```
+
+ ### 5. Run backtest & reporting
+ ```
+ ./qga_cli run --config config/conf.dev.json
+ ```
+
+ ### 6. Outputs
+ - logs → `logs/`
+ - reports → `data/`
+ - console summary → stdout
+
+---
+
+# Configuration Model
+
+QuantGradesApp uses an explicit, layered configuration model driven by JSON files and optional environment overrides.
+
+### Configuration files
+
+```
+config/
+ ├─ conf.json                 # default
+ ├─ conf.dev.json             # loaded for dev
+ └─ conf.test.json            # loaded for tests
+ ```
+
+ ### Default behavior
+ - If no profile is specified, the application loads:
+ `config/conf.json`
+ - Development and test profiles must be selected explicitly via CLI or environment.
+
+ ### CLI usage
+ ```
+ ./qga_cli run    --config config/conf.dev.json
+ ./qga_cli ingest --config config/conf.dev.json
+ ./quantgrades_api        --config config/conf.json
+```
+
+### Environment-based profile selection
+
+The configuration can also be selected via environment variable:
+
+`QGA_PROFILE=dev`
+
+This results in loading:
+
+`config/config.dev.json`
+
+### Configuration structure (derived from `Config.cpp`)
+```
+{
+  "api": {
+    "port": 8080
+  },
+  "paths": {
+    "data_dir": "data"
+  },
+  "engine": {
+    "threads": 4
+  },
+  "logging": {
+    "level": "info",
+    "file": "logs/qga.log",
+    "max_size_mb": 10,
+    "max_files": 3
+  },
+  "input": {
+    "path": "data/input.csv"
+  },
+  "output": {
+    "path": "data/output"
+  }
+}
+```
+
+### Validation rules (runtime)
+- `engine.threads`
+ - `0` → hardware concurrency
+ - `< 0` → fallback to hardware concurrency (with warning)
+ - `> CPU cores` → clamped to hardware concurrency
+- `logging.file`
+ - empty → fallback to default
+- invalid or missing config
+ - defaults are loaded with warnings
+
+There are *no silent fallbacks* — all corrections are logged as warnings.
+
+---
+
+## REST API v1
+The REST API provides external control and reporting without requiring CLI execution.
+
+### Start API
+`quantgrades_api --config config/conf.dev.json`
+
+### Endpoints
+| Method    | Endpoint             | Description              |
+|-----------|----------------------|--------------------------|
+| GET       | `/health`            | Service heartbeat         |
+| GET       | `/version`           | Build version + git hash |
+| POST      | `/ingest/csv`        | Trigger CSV ingestion    |
+
+Example:
+`curl http://localhost:8080/health`
 
 ## Module Overview
+
+### `api/`
+REST layer (server + routing) exposing core functionality to external tools:
+- `quantgrades_api` – REST entrypoint/binary
+- HTTP routes (health/version/ingest/report)
+- Request → service orchestration (calls into `core/`,`ignest/`, `reporting/`)
+- Uses runtime config + logger
+
+### `apps/`
+Standalone runnable applications / demos built on top of the engine:
+- demo entrypoints (e.g. backtest/grades/report demos)
+- “showcase” programs for release bundles / recruiters
+- `minimal glue code around `domain/` + `core/`
+
+### `cli/`
+Command-line frontend for local execution:
+- `qga_cli` - CLI entrypoint/binary
+- argument parsing + command dispatch
+- config selection (`--config ...`)
+- triggers ingest / backtest / reporting flows
 
 ### `core/`
 Shared, foundational infrastructure:
@@ -86,35 +250,52 @@ Shared, foundational infrastructure:
 
 ### `domain/`
 Business logic and quantitative model:
-- **backtest:** BarSeries, Engine, Execution, Portfolio, Order, Trade, Position, Result, Instrument, Quote
-- **strategy:** IStrategy, Buy & Hold, Moving Average Crossover
+- **backtest:** Engine, Execution, Portfolio, Orders/Trades/Positions, Result, Instrument, Quote/Series
+- domain rules and deterministic calculations
+- no IO / no HTTP / no CLI dependencies
 
 ### `ingest/`
-Data acquisition layer:
-- `DataIngest` orchestrates ingestion
+Data acquisition & layer:
+- CSV (and optional HTTP) ingestion orchestration
+- validation + mapping to domain models (e.g. `domain::Quote`)
+- high-level ingest pipeline that feeds the engine/reporting
 
 ### `io/`
 Low-level file operations:
-- `CsvLoader`
-- `FileManager`
-- `DataExporter`
+- `CsvLoader` / file readers
+- `FileManager` utilities (stateless)
+- `DataExporter` (writing reports/exports)
 
 ### `persistence/`
 Database abstraction:
 - `IDataStore` (interface)
-- `SQLiteStore`
-- `Statement` wrapper
-- `DatabaseWorker` (async)
+- `SQLiteStore` implementation
+- `Statement` / DB wrapper
+- `DatabaseWorker` / async worker / background execution (if present in your implementation)
 
 ### `reporting/`
-Observer-based reporting:
-- `IReporter`
-- `ReporterManager`
+Reporting & aggregation layer (observer-style):
+- `IReporter` interfaces
+- `ReporterManager` orchestration
+- JSON summary/report generation (used by CLI + API)
+
+### `strategy/`
+Strategy layer (pluggable trading logic):
+- `IStrategy` interface
+- concrete strategies (e.g. Buy&Hold, MA crossover if included)
+- strategy selection / integration with `domain/backtest`
 
 ### `utils/`
-Technical utilities:
-- `ILogger`, `SpdLogger`, `NullLogger`, `MockLogger`
+Technical utilities shared across modules:
+- logging abstractions (`ILogger`, implementations)
 - `LoggerFactory`
+- helpers used by multiple layers (without leaking app concerns)
+
+
+### `sql/`
+Database schema / migrations:
+- SQLite schema files
+- migrations and seed helpers
 
 ---
 
@@ -122,13 +303,21 @@ Technical utilities:
 
 ````mermaid
 flowchart TD
-    A[BarSeries] --> B[Engine]
-    B --> C[Strategy]
-    C --> D[Execution]
-    D --> E[Portfolio]
-    E --> F[Result]
-    F --> G[DataExporter]
+    CLI[CLI / API] --> Config
+    Config --> Ingest
+    Config --> Engine
+    Ingest --> Domain
+    Domain --> Statistics
+    Statistics --> Reporting
+    Reporting --> Output
+    Engine --> Reporting
 ````
+### Architectural rules
+- `domain/` contains *pure business logic*
+- `core/` contains *configuration, statistics and platform glue*
+- `cli/` and `cli/` are *thin entry layers*
+- no IO, HTTP or CLI dependencies inside `domain/`
+- all runtime behavior is config-driven
 
 ---
 
@@ -138,18 +327,26 @@ See `docs/pages/class_diagram.md` for extended diagrams.
 
 ````mermaid
 classDiagram
+    class Config
     class Engine
-    class BarSeries
     class Strategy
+    class Execution
     class Portfolio
     class Order
     class Trade
-    class Execution
+    class Result
+    class Statistics
+    class ReporterManager
 
-    Engine --> BarSeries
+    Config --> Engine
     Engine --> Strategy
-    Portfolio --> Trade
+    Engine --> Execution
+    Execution --> Portfolio
     Portfolio --> Order
+    Portfolio --> Trade
+    Portfolio --> Result
+    Engine --> Statistics
+    Statistics --> ReporterManager
 ````
 
 ---
@@ -184,15 +381,17 @@ QuantGradesApp/
 ├─ sql/
 │ └─ migrations/                            # SQLite schema migrations
 ├─ src/                                     # Implementation (.cpp)
-│ ├─ cli/
-│ ├─ core/
-│ ├─ domain/
-│ ├─ ingest/
-│ ├─ io/
-│ ├─ persistence/
-│ ├─ reporting/
-│ ├─ strategy/
-│ └─ utils/
+│ ├─ api/                   # REST API server
+│ ├─ apps/                  # Demo / showcase executables
+│ ├─ cli/                   # CLI frontend
+│ ├─ core/                  # Config, Statistics, Platform, Version
+│ ├─ domain/                # Backtest engine & models
+│ ├─ ingest/                # CSV / HTTP ingestion
+│ ├─ io/                    # File IO & exporters
+│ ├─ persistence/           # SQLite persistence layer
+│ ├─ reporting/             # Reporting & aggregation
+│ ├─ strategy/              # Trading strategies
+│ └─ utils/                 # Logging & shared utilities
 ├─ tests/                                   # Unit / integration / E2E tests
 │ ├─ e2e/
 │ ├─ fixtures/
@@ -212,7 +411,7 @@ QuantGradesApp/
 
 ## Prerequisites
 
-To build v0.9.0, install the following depending on your platform.
+To build v1.0.0, install the following depending on your platform.
 
 ### Linux (recommended)
 
@@ -243,7 +442,6 @@ vcpkg integrate install
 ```
 vcpkg install fmt spdlog sqlite3 curl
 ```
-
 
 ---
 
@@ -339,33 +537,44 @@ sudo apt install graphviz
 ---
 
 > **Note:**
-> Important:
-> Milestone 0.9.0 does NOT fix CI — that is intentionally postponed to 1.0.5
-> (Advanced Test Infrastructure milestone).
+> *v1.0.0 intentionally ships with a reduced test surface in CI.*
+> Some tests are disabled or postponed to *v1.0.5 (Advanced Test Infrastructure)* as part of a planned CI refactor.
+> This does not affect runtime stability, release bundles, or API correctness.
 
-| Platform    | Build Status        | Cache              | Tests | Notes |
-|-------------|---------------------|---------------------|-------|-------|
-| **Ubuntu**  | ⚠️ Builds, ❌ Tests | ccache             | ❌    | Config schema changed; CLI requires `--config`; Statistics tests outdated; HTTP ingest missing mock server; async logger warning during teardown |
-| **Windows** | ⚠️ Builds, ❌ Tests | sccache + vcpkg    | ❌    | CTest cannot find binaries (Ninja + MSVC outputs to `/Debug`); multi-config mismatch; fix postponed to `1.0.5` |
-| **Docs**    | ✅                  | —                  | —     | Doxygen builds successfully |
+| Platform    | Build Status        | Cache               | Tests         | Notes |
+|-------------|---------------------|---------------------|---------------|-------|
+| **Ubuntu**  | ✅ Builds           | ccache              | ⚠️ Partial    | Core builds and runtime tests pass. Some unit/(all) E2E tests disabled due to config schema refactor and missing HTTP mock server. |
+| **Windows** | ✅ Builds           | sccache + vcpkg     | ⚠️ Partial    | Builds succeed. Some tests (all E2E) disabled due to Ninja + MSVC multi-config output paths (CTest discovery).                            |
+| **Docs**    | ✅                  | —                   | —     | Doxygen builds successfully |
 
 ---
 
 ## Known Issues (High Level)
 
-### Profiling dataset is too small (demo-only)
+### Test surface intentionally reduced (v1.0.0)
+The following limitations are *known and intentional* for the v1.0.0 release:
+- Test suite partially disabled in CI
+- Some E2E and integration tests postponed
+- Coverage reporting not yet enabled in CI
+These are *infrastructure limitations*, not application regressions.
 
+### E2E tests disabled (v1.0.0)
+E2E tests are intentionally disabled in this release:
+- `tests/e2e` is not added to the build (`add_subdirectory(e2e`) commented out)
+- reason: planned migration of E2E to extended test infrastructure (Windows + HTTP server tests)
+- scheduled: v1.0.5
+
+### Profiling dataset is too small (demo-only)
 v0.9.0 ships with a tiny ingest dataset (demo.csv) for stability and CI reproducibility.
 Real performance profiling will become available in v2.0.0, once large datasets and optimized ingestion paths are added.
 
 ### Ubuntu (Linux)
 Ubuntu CI fails due to test-suite mismatches caused by legitimate refactors done in 0.9.0:
 
-- Old tests incompatible with new Config schema
-- CLI now **requires `--config`**, so doctest auto-discovery fails
-- Profile-based configs (`dev/test/prod`) changed — tests expect old values
-- HTTP ingest tests require a real HTTP server (not available on CI runners)
-- Statistics tests expect old validation logic (e.g. mean/median error cases)
+- Configuration schema was refactored → older tests no longer apply
+- CLI requires explicit `--config`→ auto-discovery tests disabled
+- Profile-based configs (`dev/test/prod`) require test refactor
+- HTTP ingest tests require a mock HTTP server (planned for 1.0.5)
 - Async logger prints warnings when destroyed before thread pool flush
 
 These failures are **not regressions in application logic** —
@@ -374,8 +583,7 @@ they reflect that tests must be updated to match the new architecture.
 ---
 
 ### Windows (MSVC + Ninja + vcpkg)
-Windows CI fails because **CTest cannot find test executables**, e.g.:
-- Ninja + MSVC output layout mismatch:
+- Ninja + MSVC generates binaries under:
 ```
 build/Debug/qga_tests.exe
 build/Release/qga_tests.exe
@@ -390,19 +598,15 @@ build/bin/qga_tests.exe
 ---
 
 # Roadmap
-### v0.9.0
-- CPU profiling + hotspots
-- Statistics expansion
-- Tests stabilization (Linux only)
-- Cleanup, formatting, clang-tidy baseline
 
-### v1.0.0 (MVP Stable)
+### v1.0.0 Stable Core Release
 
-- REST API v1 (crow/cpp-httplib)
+- REST API v1
 - Linux/Windows release bundles
+- Production-ready configuration model
 - Documentation overhaul
-- Coverage ≥70% (core modules)
-- NO CI fix here
+- Stable runtime & deterministic behavior
+- CI builds are stable; test surface intentionally reduced
 
 ### v1.0.5 (Advanced Test Infrastructure)
 

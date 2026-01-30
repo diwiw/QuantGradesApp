@@ -1,9 +1,9 @@
 # ============================================================
 # 🌍 Project Version Definition
 # ============================================================
-set(QGA_VERSION_MAJOR 0)
-set(QGA_VERSION_MINOR 9)
-set(QGA_VERSION_PATCH 4)
+set(QGA_VERSION_MAJOR 1)
+set(QGA_VERSION_MINOR 0)
+set(QGA_VERSION_PATCH 0)
 
 set(QGA_VERSION "${QGA_VERSION_MAJOR}.${QGA_VERSION_MINOR}.${QGA_VERSION_PATCH}")
 
