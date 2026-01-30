@@ -303,11 +303,6 @@ install(
 )
 
 install(
-    DIRECTORY ${CMAKE_SOURCE_DIR}/runtime/data
-    DESTINATION .
-)
-
-install(
     FILES ${CMAKE_SOURCE_DIR}/runtime/README.md
     DESTINATION .
 )
