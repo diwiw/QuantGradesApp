@@ -23,7 +23,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
                 "BUILD_EXAMPLES": "ON",
-                "BUILD_API": "ON"
+                "BUILD_API": "ON",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -35,7 +36,8 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
                 "BUILD_EXAMPLES": "ON",
-                "BUILD_API": "ON"
+                "BUILD_API": "ON",
+                "BUILD_TESTING": "OFF"
             }
         },
         {
@@ -46,7 +48,8 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-                "BUILD_API": "ON"
+                "BUILD_API": "ON",
+                "BUILD_TESTING": "OFF"
             }
         },
         {
@@ -86,6 +89,20 @@
             "name": "build-linux-release-cli",
             "displayName": "Build Release CLI App",
             "configurePreset": "linux-release"
+        },
+        {
+            "name": "build-doctest-linux-debug",
+            "configurePreset": "linux-debug",
+            "targets": [
+                "qga_tests_doctest"
+            ]
+        },
+        {
+            "name": "build-gtest-linux-debug",
+            "configurePreset": "linux-debug",
+            "targets": [
+                "qga_tests_gtest"
+            ]
         },
         {
             "name": "build-linux-debug-e2e",
@@ -128,6 +145,37 @@
             "name": "unit-linux-debug",
             "displayName": "Run Unit Tests (Debug)",
             "configurePreset": "linux-debug",
+            "filter": {
+                "include": {
+                    "label": "unit"
+                }
+            },
+            "execution": {
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "unit-doctest-linux-debug",
+            "displayName": "Run Doctest Unit Tests (Debug)",
+            "configurePreset": "linux-debug",
+            "filter": {
+                "include": {
+                    "label": "doctest"
+                }
+            },
+            "execution": {
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "unit-gtest-linux-debug",
+            "displayName": "Run GoogleTest Unit Tests (Debug)",
+            "configurePreset": "linux-debug",
+            "filter": {
+                "include": {
+                    "label": "gtest"
+                }
+            },
             "execution": {
                 "stopOnFailure": true
             }

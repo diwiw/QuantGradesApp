@@ -62,7 +62,7 @@
                 "--preset",
                 "build-linux-debug",
                 "--target",
-                "qga_tests",
+                "qga_tests_doctest",
                 "--parallel"
             ],
             "dependsOn": [
@@ -136,7 +136,7 @@
                 "--preset",
                 "build-linux-release",
                 "--target",
-                "qga_tests",
+                "qga_tests_doctest",
                 "--parallel"
             ],
             "dependsOn": [
@@ -185,7 +185,7 @@
             "command": "bash",
             "args": [
                 "-c",
-                "cmake --build --preset build-linux-debug --target qga_tests -j && ctest -C Debug -L unit --output-on-failure --test-dir build/Debug"
+                "cmake --build --preset build-linux-debug --target qga_tests_doctest -j && ctest -C Debug -L unit --output-on-failure --test-dir build/Debug"
             ],
             "dependsOn": [
                 "Configure Debug (vcpkg)"
@@ -211,7 +211,7 @@
             "command": "bash",
             "args": [
                 "-c",
-                "cmake --build --preset build-linux-release --target qga_tests -j && ctest -C Release -L unit --output-on-failure --test-dir build/Release"
+                "cmake --build --preset build-linux-release --target qga_tests_doctest -j && ctest -C Release -L unit --output-on-failure --test-dir build/Release"
             ],
             "dependsOn": [
                 "Configure Release (vcpkg)"

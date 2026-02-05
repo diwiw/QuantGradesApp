@@ -53,6 +53,8 @@ option(BUILD_DOCS "Build documentation with doxygen" OFF)
 option(BUILD_EXAMPLES "Build legacy demo targets (grades_demo, logger_demo)" OFF)
 option(BUILD_API "Build REST API server" OFF)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -72,7 +74,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-include(CTest)
+
 
 # ============================================================
 # 🧩 Optional sanitizer
@@ -254,8 +256,10 @@ endif()
 # ============================================================
 # 🧪 Tests
 # ============================================================
-enable_testing()
-add_subdirectory(tests)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
 
 # ============================================================
 # 📘 Doxygen
