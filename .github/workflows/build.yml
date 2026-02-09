@@ -12,405 +12,171 @@ permissions:
   contents: write
 
 jobs:
-  ubuntu-build:
-    name: Ubuntu • Build & Test (with ccache)
-    runs-on: ubuntu-latest
-
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Ubuntu • Debug"
+            os: ubuntu-latest
+            preset: linux-debug
+            build_preset: build-linux-debug
+            test_preset: test-unit-linux
+            artifact_suffix: linux-debug
+          - name: "Ubuntu • Release"
+            os: ubuntu-latest
+            preset: linux-release
+            build_preset: build-linux-release
+            artifact_suffix: linux-release
+          - name: "Windows • Release"
+            os: windows-latest
+            preset: windows-release
+            build_preset: build-windows-release
+            artifact_suffix: windows-release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - name: Install dependencies
+      # --- LINUX SETUP ---
+      - name: Cleanup APT & Install System Tools (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-
           sudo apt-get update
           sudo apt-get install -y \
-            cmake ninja-build pkg-config ccache \
-            libcurl4-openssl-dev libsqlite3-dev \
-            libspdlog-dev libfmt-dev
+            ninja-build \
+            pkg-config \
+            ccache
+            echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> $GITHUB_ENV
 
-      - name: Setup ccache
+
+      # --- WINDOWS SETUP ---
+      - name: Install Tools (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          echo "max_size = 2G" | sudo tee /etc/ccache.conf
-          export PATH="/usr/lib/ccache:$PATH"
-          echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
-          ccache --zero-stats
+          choco install -y \
+            ninja \
+            sccache
+          echo "SCACHE_DIR=$env:USERPROFILE\AppData\Local\Mozilla\sccache" >> $env:GITHUB_ENV
 
-      - name: Cache ccache
+      # --- COMPILER CACHE ---
+      - name: Compiler Cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.hpp') }}
-          restore-keys: ${{ runner.os }}-ccache-
+          path: |
+            ${{ github.workspace }}/.ccache
+            ~\AppData\Local\Mozilla\sccache
+          key: ${{ runner.os }}-cc-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-cc-${{ github.ref_name }}-
+            ${{ runner.os }}-cc-
 
-      - name: Clean previous CMake cache
-        run: rm -rf build
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+          vcpkgGitCommitId: 'master'
 
-      - name: Configure
+      # --- BUILD ---
+      - name: Configure & Build
         run: |
-          cmake -S . -B build -G Ninja \
-            -DBUILD_API=ON \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-            -DBUILD_EXAMPLES=ON \
-            -DBUILD_DOCS=OFF \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --preset ${{ matrix.preset }} -DVCPKG_ROOT=${{ github.workspace }}/vcpkg
+          cmake --build --preset ${{ matrix.build_preset }} --parallel
 
-      - name: List built targets
-        run: cmake --build build --target help | grep demo || true
-
-      - name: Build
-        run: cmake --build build --parallel
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-      - name: Show ccache stats
-        if: always()
-        run: ccache --show-stats
-
-      - name: Run All Demos (CI Check)
-        if: success()
-        run: |
-          cp config.json build/bin/ 2>/dev/null || true
-          cp examples/*/assets/* build/bin/ 2>/dev/null || true
-
-          cd build/bin
-
-          echo ">>> Running logger_demo..."
-          if [ -f ./logger_demo ]; then ./logger_demo; else echo "logger_demo missing"; exit 1; fi
-
-          echo ">>> Running grades_demo..."
-          if [ -f ./grades_demo ]; then ./grades_demo; else echo "grades_demo missing"; exit 1; fi
-
-          echo ">>> Running backtest_demo..."
-          if [ -f ./backtest_demo ]; then ./backtest_demo; else echo "backtest_demo missing"; exit 1; fi
-
+      # --- ASSETS & DEMOS ---
+      - name: Prepare Assets & Run Demos
         shell: bash
+        run: |
+          BIN_DIR="build/${{ matrix.preset }}/bin"
+          [ -d "$BIN_DIR" ] || exit 0
 
-      - name: Upload Demo Outputs
-        if: success()
+          cp config.json "$BIN_DIR/" 2>/dev/null || true
+          find examples -type d -name "assets" -exec cp -r {}/. "$BIN_DIR/" \; 2>/dev/null || true
+
+          cd "$BIN_DIR"
+          for demo in logger_demo grades_demo backtest_demo; do
+            exe="./$demo"
+            [ -f "$demo.exe" ] && exe="./$demo.exe"
+            if [ -f "$exe" ]; then
+              echo ">>> Executing $demo..."
+              $exe || exit 1
+            fi
+          done
+
+      # --- TESTING ---
+      - name: Run Tests
+        if: matrix.test_preset
+        run: ctest --preset ${{ matrix.test_preset }}
+
+      # --- ARTIFACTS ---
+      - name: Package & SHA256
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          cmake --install build/${{ matrix.preset }} --prefix dist/qga
+          cd dist
+          PKG_NAME="quantgrades-${{ matrix.artifact_suffix }}.tar.gz"
+          [ "${{ runner.os }}" == "windows" ]; then 7z a "../$PKG_NAME" qga/; else tar -czf "../$PKG_NAME" qga/; fi
+          cd ..
+          sha256sum $PKG_NAME > $PKG_NAME.sha256
+
+      - name: Upload Bundle
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: DemoOutputs-Ubuntu-${{ github.run_number }}
-          path: |
-            data/*.csv
-            data/*.json
-            data/*.log
-            build/bin/*.csv
-            build/bin/*.json
-            build/bin/*.log
-          if-no-files-found: warn
+          name: bundle-${{ matrix.artifact_suffix }}
+          path: quantgrades-${{ matrix.artifact_suffix }}.*
 
-      - name: Install bundle (Linux)
-        if: success()
-        run: |
-          rm -rf bundle
-          cmake --install build --prefix bundle/quantgrades_api
-          echo "Bundle tree:"
-          find bundle -maxdepth 3 -type f -print
-
-      - name: Create tar.gz (Linux)
-        if: success()
-        run: |
-          tar -czf quantgrades_api-linux-x64.tar.gz -C bundle quantgrades_api
-          ls -lh quantgrades_api-linux-x64.tar.gz
-
-      - name: SHA256 (Linux)
-        if: success()
-        run: sha256sum quantgrades_api-linux-x64.tar.gz > quantgrades_api-linux-x64.sha256
-
-      - name: Upload Linux bundle
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quantgrades_api-linux-bundle
-          path: |
-            quantgrades_api-linux-x64.tar.gz
-            quantgrades_api-linux-x64.sha256
-          if-no-files-found: error
-
+# --- THREAD SANITIZER
   ubuntu-tsan:
-    name: Ubuntu • ThreadSanitizer (TSan)
+    name: Ubuntu • ThreadSanitizer (Clang + ccache)
     runs-on: ubuntu-latest
-    continue-on-error: true
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies for TSan
+      - uses: actions/checkout@v4
+      - name: Install Clang & Tools
         run: |
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-
           sudo apt-get update
           sudo apt-get install -y \
-            clang cmake ninja-build ccache pkg-config \
-            libcurl4-openssl-dev libsqlite3-dev \
-            libspdlog-dev libfmt-dev
-
-      - name: Setup ccache
-        run: |
-          echo "max_size = 2G" | sudo tee /etc/ccache.conf
-          export PATH="/usr/lib/ccache:$PATH"
-          echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
-          ccache --zero-stats
-
-      - name: Cache ccache
+            clang cmake ninja-build ccache
+      - name: TSan Cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ccache
+          path: ${{ github.workspace }}/.ccache-tsan
           key: ${{ runner.os }}-tsan-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.hpp') }}
           restore-keys: ${{ runner.os }}-tsan-ccache-
-
-      - name: Configure (TSan)
-        run: |
-          cmake -S . -B build-tsan -G Ninja \
-            -DBUILD_API=ON \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DENABLE_TSAN=ON \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_EXAMPLES=OFF \
-            -DBUILD_DOCS=OFF
-
-      - name: Build (TSan)
-        run: cmake --build build-tsan --parallel
-
-      - name: Run Tests (TSan)
-        run: |
-          ASAN_OPTIONS=halt_on_error=0:detect_leaks=0 \
-          TSAN_OPTIONS="halt_on_error=0 second_deadlock_stack=1 suppressions=${{ github.workspace }}/.tsan-suppressions.txt" \
-          ctest --test-dir build-tsan --output-on-failure || echo "TSan run completed with warnings"
-
-      - name: Upload TSan reports
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
         with:
-          name: ThreadSanitizer-Reports
-          path: |
-            build-tsan/Testing/Temporary/*.log
-            build-tsan/*.tsan
-          if-no-files-found: ignore
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+          vcpkgGitCommitId: 'master'
 
-      - name: Show ccache stats
-        if: always()
-        run: ccache --show-stats
-
-  windows-build:
-    name: Windows • Build & Test (MSVC + vcpkg + sccache)
-    runs-on: windows-latest
-
-    env:
-      # Define paths relative to workspace to avoid spaces in paths
-      VCPKG_OVERLAY_TRIPLETS: ${{ github.workspace }}\vcpkg_triplets
-      VCPKG_DEFAULT_TRIPLET: x64-windows-static
-      CMAKE_BUILD_PARALLEL_LEVEL: 2
-      SCCACHE_DIR: C:\sccache
-      SCCACHE_LOG: error
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Activate MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Install Ninja & sccache
-        shell: cmd
+      - name: Build & Test (TSan)
         run: |
-          choco install ninja
-          choco install sccache
-          sccache --version
-
-      - name: Cache sccache
-        uses: actions/cache@v4
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Mozilla\sccache
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/*.cpp', '**/*.hpp', '**/CMakeLists.txt') }}
-          restore-keys: ${{ runner.os }}-sccache-
-
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            vcpkg/installed
-            vcpkg/buildtrees
-            vcpkg/downloads
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-          restore-keys: ${{ runner.os }}-vcpkg-
-
-      - name: Setup vcpkg manually
-        shell: cmd
-        run: |
-          if exist vcpkg (rmdir /s /q vcpkg)
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          git checkout 62324000504cdd27282f8275c99135cfb2bd1dc0
-          .\bootstrap-vcpkg.bat -disableMetrics
-
-      - name: Configure (Windows)
-        shell: cmd
-        run: |
-          REM Override VCPKG_ROOT to local workspace to avoid "Program Files" spaces from VS
-          set "VCPKG_ROOT=%GITHUB_WORKSPACE%\vcpkg"
-          set "VCPKG_USE_SYSTEM_NINJA=1"
-
-          echo Using VCPKG_ROOT: %VCPKG_ROOT%
-
-          cmake -S . -B build -G "Ninja" ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            "-DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
-            "-DVCPKG_OVERLAY_TRIPLETS=%GITHUB_WORKSPACE%\vcpkg_triplets" ^
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
-            -DBUILD_EXAMPLES=ON -DBUILD_DOCS=OFF -DBUILD_API=ON ^
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-      - name: Build (Release)
-        shell: cmd
-        run: cmake --build build --parallel
-
-      - name: Run Tests
-        shell: cmd
-        run: ctest --test-dir build --output-on-failure -V
-
-      - name: Run All Demos (CI Check)
-        if: success()
-        shell: cmd
-        run: |
-          copy config.json build\bin\ 2>nul
-          copy examples\grades_demo\assets\* build\bin\ 2>nul
-          copy examples\logger_demo\assets\* build\bin\ 2>nul
-
-          cd build\bin
-
-          echo --- Running logger_demo...
-          if exist logger_demo.exe ( logger_demo.exe ) else ( exit 1 )
-
-          echo ---  Running grades_demo...
-          if exist grades_demo.exe ( grades_demo.exe ) else ( exit 1 )
-
-          echo --- Running backtest_demo...
-          if exist backtest_demo.exe ( backtest_demo.exe ) else ( exit 1 )
-
-      - name: Upload Demo Outputs
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: DemoOutputs-Windows-${{ github.run_number }}
-          path: |
-            data/*.csv
-            data/*.json
-            build/bin/data/*.csv
-            build/bin/data/*.json
-            build/bin/*.csv
-            build/bin/*.json
-          if-no-files-found: warn
-
-      - name: Install and Assemble Bundle (Windows)
-        if: success()
-        shell: cmd
-        run: |
-          rmdir /s /q bundle 2>nul
-          REM 1. Install executables via CMake
-          cmake --install build --prefix bundle\quantgrades_api
-
-          REM 2. Manually copy files required by Issue #197
-          echo Copying documentation and configs...
-          copy config.json bundle\quantgrades_api\ 2>nul || echo (config.json not found)
-          copy *.csv bundle\quantgrades_api\ 2>nul || echo (No CSV files found in root)
-
-          echo Final Bundle Content:
-          dir /s /b bundle
-
-      - name: Create zip (Windows)
-        if: success()
-        shell: powershell
-        run: |
-          Compress-Archive bundle\quantgrades_api quantgrades_api-windows-x64.zip
-          Get-Item quantgrades_api-windows-x64.zip | Format-List *
-
-      - name: SHA256 (Windows)
-        if: success()
-        shell: powershell
-        run: |
-          $h = (Get-FileHash quantgrades_api-windows-x64.zip -Algorithm SHA256).Hash
-          "$h  quantgrades_api-windows-x64.zip" | Out-File -Encoding ascii -FilePath quantgrades_api-windows-x64.sha256
-          type quantgrades_api-windows-x64.sha256
-
-      - name: Upload Windows bundle
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quantgrades_api-windows-bundle
-          path: |
-            quantgrades_api-windows-x64.zip
-            quantgrades_api-windows-x64.sha256
-          if-no-files-found: error
-
-      - name: Upload Compiler Detection Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: CompilerDetectionLogs
-          path: vcpkg/buildtrees/detect_compiler/**/*.log
-
-      - name: Upload vcpkg logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: vcpkg-logs
-          path: vcpkg/buildtrees/**/*.log
-
-  publish_release:
-    name: "🚀 Publish GitHub Release (attach bundles)"
-    runs-on: ubuntu-latest
-    needs:
-      - ubuntu-build
-      - windows-build
+          cmake -S . -B build-tsan -G Ninja -DENABLE_TSAN=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DVCPKG_ROOT=${{ github.workspace }}/vcpkg
+          cmake --build build-tsan --parallel
+          export TSAN_OPTIONS="halt_on_error=1 second_deadlock_stack=1"
+          ctest --test-dir build-tsan --output-on-failure
+# --- PUBLISH DATA ---
+  publish:
+    name: "🚀 Publish Release"
+    needs: [build-and-test, ubuntu-tsan]
     if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download Linux bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: quantgrades_api-linux-bundle
-          path: dist/linux
-
-      - name: Download Windows bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: quantgrades_api-windows-bundle
-          path: dist/windows
-
-      - name: List files
-        run: |
-          echo "=== dist/linux ==="
-          ls -lh dist/linux || true
-          echo "=== dist/windows ==="
-          ls -lh dist/windows || true
-
-      - name: Verify SHA256 (Linux)
-        run: |
-          cd dist/linux
-          sha256sum -c quantgrades-linux-x64.sha256 || true
-
-      - name: Attach assets to Release
+      - uses: actions/download-artifact@v4
+        with: { path: release_assets, pattern: 'bundle-*' }
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/linux/quantgrades_api-linux-x64.tar.gz
-            dist/linux/quantgrades_api-linux-x64.sha256
-            dist/windows/quantgrades_api-windows-x64.zip
-            dist/windows/quantgrades_api-windows-x64.sha256
+          files: release_assets/**/*
           generate_release_notes: true
-          draft: false
-          prerelease: false

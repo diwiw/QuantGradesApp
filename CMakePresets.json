@@ -1,27 +1,43 @@
 {
-    "version": 5,
+    "version": 6,
     "cmakeMinimumRequired": {
         "major": 3,
         "minor": 25
     },
     "configurePresets": [
         {
-            "name": "base-vcpkg",
+            "name": "base-common",
             "hidden": true,
             "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "/home/diw/Programming/projects_cpp/vcpkg/scripts/buildsystems/vcpkg.cmake",
                 "VCPKG_FEATURE_FLAGS": "manifests"
             }
         },
         {
+            "name": "base-linux",
+            "hidden": true,
+            "inherits": "base-common",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+                "BUILD_DOCS": "OFF"
+            }
+        },
+        {
+            "name": "base-windows",
+            "hidden": true,
+            "inherits": "base-common",
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+            }
+        },
+        {
             "name": "linux-debug",
-            "displayName": "Linux Debug (vcpkg)",
-            "inherits": "base-vcpkg",
-            "binaryDir": "build/Debug",
+            "displayName": "Linux Debug",
+            "inherits": "base-linux",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
                 "BUILD_EXAMPLES": "ON",
                 "BUILD_API": "ON",
                 "BUILD_TESTING": "ON"
@@ -29,12 +45,10 @@
         },
         {
             "name": "linux-release",
-            "displayName": "Linux Release (vcpkg)",
-            "inherits": "base-vcpkg",
-            "binaryDir": "build/Release",
+            "displayName": "Linux Release",
+            "inherits": "base-linux",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
                 "BUILD_EXAMPLES": "ON",
                 "BUILD_API": "ON",
                 "BUILD_TESTING": "OFF"
@@ -42,28 +56,31 @@
         },
         {
             "name": "windows-release",
-            "displayName": "Windows Release (MSVC + vcpkg + Ninja)",
-            "inherits": "base-vcpkg",
-            "binaryDir": "build/WindowsRelease",
+            "displayName": "Windows Release",
+            "inherits": "base-windows",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
                 "BUILD_API": "ON",
                 "BUILD_TESTING": "OFF"
             }
         },
         {
             "name": "linux-profiling",
-            "displayName": "Linux Profiling (Release + symbols)",
-            "inherits": "base-vcpkg",
-            "binaryDir": "build/Profiling",
+            "displayName": "Linux Profiling",
+            "inherits": "base-linux",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-                "BUILD_EXAMPLES": "OFF",
                 "CMAKE_CXX_FLAGS": "-O2 -g -fno-omit-frame-pointer",
                 "CMAKE_C_FLAGS": "-O2 -g -fno-omit-frame-pointer",
                 "BUILD_API": "ON"
+            }
+        },
+        {
+            "name": "linux-docs",
+            "displayName": "Linux Documentation Build",
+            "inherits": "linux-debug",
+            "cacheVariables": {
+                "BUILD_DOCS": "ON"
             }
         }
     ],
@@ -81,127 +98,28 @@
             "configurePreset": "windows-release"
         },
         {
-            "name": "build-linux-debug-cli",
-            "displayName": "Build Debug CLI App",
-            "configurePreset": "linux-debug"
-        },
-        {
-            "name": "build-linux-release-cli",
-            "displayName": "Build Release CLI App",
-            "configurePreset": "linux-release"
-        },
-        {
-            "name": "build-doctest-linux-debug",
-            "configurePreset": "linux-debug",
-            "targets": [
-                "qga_tests_doctest"
-            ]
-        },
-        {
-            "name": "build-gtest-linux-debug",
-            "configurePreset": "linux-debug",
-            "targets": [
-                "qga_tests_gtest"
-            ]
-        },
-        {
-            "name": "build-linux-debug-e2e",
-            "configurePreset": "linux-debug",
-            "targets": [
-                "qga_tests_e2e"
-            ]
-        },
-        {
-            "name": "build-linux-release-e2e",
-            "configurePreset": "linux-release",
-            "targets": [
-                "qga_tests_e2e"
-            ]
-        },
-        {
             "name": "build-linux-profiling",
-            "displayName": "Build Profiling (RelWithDebInfo)",
             "configurePreset": "linux-profiling"
         },
         {
-            "name": "build-linux-debug-api",
-            "displayName": "Build Debug API Server",
+            "name": "build-docs",
             "configurePreset": "linux-debug",
             "targets": [
-                "qga_api"
-            ]
-        },
-        {
-            "name": "build-linux-release-api",
-            "displayName": "Build Release API Server",
-            "configurePreset": "linux-release",
-            "targets": [
-                "qga_api"
+                "docs"
             ]
         }
     ],
     "testPresets": [
         {
-            "name": "unit-linux-debug",
-            "displayName": "Run Unit Tests (Debug)",
+            "name": "test-unit-linux",
             "configurePreset": "linux-debug",
+            "output": {
+                "outputOnFailure": true
+            },
             "filter": {
                 "include": {
                     "label": "unit"
                 }
-            },
-            "execution": {
-                "stopOnFailure": true
-            }
-        },
-        {
-            "name": "unit-doctest-linux-debug",
-            "displayName": "Run Doctest Unit Tests (Debug)",
-            "configurePreset": "linux-debug",
-            "filter": {
-                "include": {
-                    "label": "doctest"
-                }
-            },
-            "execution": {
-                "stopOnFailure": true
-            }
-        },
-        {
-            "name": "unit-gtest-linux-debug",
-            "displayName": "Run GoogleTest Unit Tests (Debug)",
-            "configurePreset": "linux-debug",
-            "filter": {
-                "include": {
-                    "label": "gtest"
-                }
-            },
-            "execution": {
-                "stopOnFailure": true
-            }
-        },
-        {
-            "name": "unit-linux-release",
-            "displayName": "Run Unit Tests (Release)",
-            "configurePreset": "linux-release",
-            "execution": {
-                "stopOnFailure": true
-            }
-        },
-        {
-            "name": "e2e-linux-debug",
-            "displayName": "Run E2E Tests (Debug)",
-            "configurePreset": "linux-debug",
-            "execution": {
-                "stopOnFailure": true
-            }
-        },
-        {
-            "name": "e2e-linux-release",
-            "displayName": "Run E2E Tests (Release)",
-            "configurePreset": "linux-release",
-            "execution": {
-                "stopOnFailure": true
             }
         }
     ]

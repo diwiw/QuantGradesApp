@@ -271,7 +271,7 @@ if(BUILD_DOCS)
         add_custom_target(docs
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            COMMENT "📘 Generating API documentation with Doxygen"
+            COMMENT "📘 Generating documentation with Doxygen"
         )
     else()
         message(FATAL_ERROR "❌ Doxygen required when BUILD_DOCS=ON.")
