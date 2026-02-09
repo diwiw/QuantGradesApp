@@ -60,9 +60,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install -y \
-            ninja \
-            sccache
+          choco install ninja sccache --no-progress
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
           echo "SCACHE_DIR=$env:USERPROFILE\AppData\Local\Mozilla\sccache" >> $env:GITHUB_ENV
 
       # --- COMPILER CACHE ---
@@ -74,7 +73,6 @@ jobs:
             ~\AppData\Local\Mozilla\sccache
           key: ${{ runner.os }}-cc-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-cc-${{ github.ref_name }}-
             ${{ runner.os }}-cc-
 
       - name: Setup vcpkg
