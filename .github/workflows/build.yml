@@ -1,180 +1,114 @@
-name: CI • Build & Test
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
-    tags:
-      - v*
+    branches: [main, develop]
+    tags: ['v*']
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 permissions:
   contents: write
 
 jobs:
-  build-and-test:
+  build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "Ubuntu • Debug"
+          - name: "linux-debug"
             os: ubuntu-latest
             preset: linux-debug
             build_preset: build-linux-debug
-            test_preset: test-unit-linux
-            artifact_suffix: linux-debug
-          - name: "Ubuntu • Release"
+          - name: "linux-release"
             os: ubuntu-latest
             preset: linux-release
             build_preset: build-linux-release
-            artifact_suffix: linux-release
-          - name: "Windows • Release"
+          - name: "windows-release"
             os: windows-latest
             preset: windows-release
             build_preset: build-windows-release
-            artifact_suffix: windows-release
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: true
 
-      # --- LINUX SETUP ---
-      - name: Cleanup APT & Install System Tools (Linux)
-        if: runner.os == 'Linux'
+      - name: Install Dependencies
+        shell: bash
         run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt-get update
-          sudo apt-get install -y \
-            ninja-build \
-            pkg-config \
-            ccache
-            echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> $GITHUB_ENV
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y ninja-build ccache
+          else
+            choco install ninja sccache --no-progress
+          fi
 
-
-      # --- WINDOWS SETUP ---
-      - name: Install Tools (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      - name: Build
+        shell: bash
         run: |
-          choco install ninja sccache --no-progress
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
-          echo "SCACHE_DIR=$env:USERPROFILE\AppData\Local\Mozilla\sccache" >> $env:GITHUB_ENV
-
-      # --- COMPILER CACHE ---
-      - name: Compiler Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ github.workspace }}/.ccache
-            ~\AppData\Local\Mozilla\sccache
-          key: ${{ runner.os }}-cc-${{ github.ref_name }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-cc-
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg
-          vcpkgGitCommitId: 'master'
-
-      # --- BUILD ---
-      - name: Configure & Build
-        run: |
-          cmake --preset ${{ matrix.preset }} -DVCPKG_ROOT=${{ github.workspace }}/vcpkg
+          V_ROOT=$VCPKG_INSTALLATION_ROOT
+          cmake --preset ${{ matrix.preset }} -DVCPKG_ROOT="$V_ROOT"
           cmake --build --preset ${{ matrix.build_preset }} --parallel
 
-      # --- ASSETS & DEMOS ---
-      - name: Prepare Assets & Run Demos
+      - name: Run Demos
         shell: bash
         run: |
           BIN_DIR="build/${{ matrix.preset }}/bin"
-          [ -d "$BIN_DIR" ] || exit 0
+          if [ -d "$BIN_DIR" ]; then
+            cd "$BIN_DIR"
+            for f in *_demo *_demo.exe; do
+              if [ -f "$f" ]; then
+                echo "Running $f..."
+                ./$f || exit 1
+              fi
+            done
+          fi
 
-          cp config.json "$BIN_DIR/" 2>/dev/null || true
-          find examples -type d -name "assets" -exec cp -r {}/. "$BIN_DIR/" \; 2>/dev/null || true
-
-          cd "$BIN_DIR"
-          for demo in logger_demo grades_demo backtest_demo; do
-            exe="./$demo"
-            [ -f "$demo.exe" ] && exe="./$demo.exe"
-            if [ -f "$exe" ]; then
-              echo ">>> Executing $demo..."
-              $exe || exit 1
-            fi
-          done
-
-      # --- TESTING ---
-      - name: Run Tests
-        if: matrix.test_preset
-        run: ctest --preset ${{ matrix.test_preset }}
-
-      # --- ARTIFACTS ---
-      - name: Package & SHA256
+      - name: Package
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
-          cmake --install build/${{ matrix.preset }} --prefix dist/qga
-          cd dist
-          PKG_NAME="quantgrades-${{ matrix.artifact_suffix }}.tar.gz"
-          [ "${{ runner.os }}" == "windows" ]; then 7z a "../$PKG_NAME" qga/; else tar -czf "../$PKG_NAME" qga/; fi
-          cd ..
-          sha256sum $PKG_NAME > $PKG_NAME.sha256
+          cmake --install build/${{ matrix.preset }} --prefix dist
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            7z a "qga-${{ matrix.name }}.zip" ./dist/*
+          else
+            tar -czf "qga-${{ matrix.name }}.tar.gz" -C dist .
+          fi
 
-      - name: Upload Bundle
+      - name: Upload Artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: bundle-${{ matrix.artifact_suffix }}
-          path: quantgrades-${{ matrix.artifact_suffix }}.*
+          name: ${{ matrix.name }}-package
+          path: qga-*
 
-# --- THREAD SANITIZER
-  ubuntu-tsan:
-    name: Ubuntu • ThreadSanitizer (Clang + ccache)
+  tsan:
+    name: "linux-tsan"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Clang & Tools
+      - name: Setup
+        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
+      - name: Build & Test
         run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build ccache
-      - name: TSan Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.ccache-tsan
-          key: ${{ runner.os }}-tsan-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.hpp') }}
-          restore-keys: ${{ runner.os }}-tsan-ccache-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg
-          vcpkgGitCommitId: 'master'
-
-      - name: Build & Test (TSan)
-        run: |
-          cmake -S . -B build-tsan -G Ninja -DENABLE_TSAN=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DVCPKG_ROOT=${{ github.workspace }}/vcpkg
+          cmake -S . -B build-tsan -G Ninja -DENABLE_TSAN=ON \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DVCPKG_ROOT=$VCPKG_INSTALLATION_ROOT
           cmake --build build-tsan --parallel
-          export TSAN_OPTIONS="halt_on_error=1 second_deadlock_stack=1"
+          export TSAN_OPTIONS="halt_on_error=1"
           ctest --test-dir build-tsan --output-on-failure
-# --- PUBLISH DATA ---
-  publish:
-    name: "🚀 Publish Release"
-    needs: [build-and-test, ubuntu-tsan]
+
+  release:
+    name: "Publish Release"
+    needs: [build, tsan]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-        with: { path: release_assets, pattern: 'bundle-*' }
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        with: { path: artifacts, pattern: '*-package' }
+      - uses: softprops/action-gh-release@v2
         with:
-          files: release_assets/**/*
+          files: artifacts/**/*
           generate_release_notes: true
