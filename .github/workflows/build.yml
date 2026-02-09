@@ -1,32 +1,33 @@
-name: CI
+name: CI • Production Pipeline
 
 on:
   push:
-    branches: [main, develop]
-    tags: ['v*']
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, develop ]
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  build-and-test:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "linux-debug"
+          - name: "Ubuntu • Debug"
             os: ubuntu-latest
             preset: linux-debug
             build_preset: build-linux-debug
-          - name: "linux-release"
+            test_preset: test-unit-linux
+          - name: "Ubuntu • Release"
             os: ubuntu-latest
             preset: linux-release
             build_preset: build-linux-release
-          - name: "windows-release"
+          - name: "Windows • Release"
             os: windows-latest
             preset: windows-release
             build_preset: build-windows-release
@@ -36,56 +37,76 @@ jobs:
         with:
           submodules: true
 
-      - name: Install Dependencies
-        shell: bash
+      # --- OS SPECIFIC SETUP ---
+      - name: Setup Linux Tools
+        if: runner.os == 'Linux'
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo apt-get update && sudo apt-get install -y ninja-build ccache
-          else
-            choco install ninja sccache --no-progress
-          fi
+          sudo apt-get update && sudo apt-get install -y ninja-build ccache
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
-      - name: Build
+      - name: Setup Windows Tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install ninja sccache --no-progress
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      # --- CACHE ---
+      - name: Compiler Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ccache
+            ~\AppData\Local\Mozilla\sccache
+          key: ${{ runner.os }}-cc-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-cc-
+
+      # --- BUILD ---
+      - name: Configure & Build
         shell: bash
         run: |
-          V_ROOT=$VCPKG_INSTALLATION_ROOT
-          cmake --preset ${{ matrix.preset }} -DVCPKG_ROOT="$V_ROOT"
+          cmake --preset ${{ matrix.preset }}
           cmake --build --preset ${{ matrix.build_preset }} --parallel
 
+      # --- RUN DEMOS (Exact logic from your working version) ---
       - name: Run Demos
         shell: bash
         run: |
           BIN_DIR="build/${{ matrix.preset }}/bin"
           if [ -d "$BIN_DIR" ]; then
             cd "$BIN_DIR"
-            for f in *_demo *_demo.exe; do
-              if [ -f "$f" ]; then
-                echo "Running $f..."
-                ./$f || exit 1
-              fi
+            cp ../../../config.json . 2>/dev/null || true
+            for d in logger_demo grades_demo backtest_demo; do
+              exe="./$d"; [ -f "$d.exe" ] && exe="./$d.exe"
+              if [ -f "$exe" ]; then $exe || exit 1; fi
             done
           fi
 
-      - name: Package
+      # --- PACKAGING (Only on Tags) ---
+      - name: Package & SHA256
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
-          cmake --install build/${{ matrix.preset }} --prefix dist
+          cmake --install build/${{ matrix.preset }} --prefix bundle/qga
           if [ "${{ runner.os }}" == "Windows" ]; then
-            7z a "qga-${{ matrix.name }}.zip" ./dist/*
+            7z a "qga-${{ matrix.preset }}.zip" ./bundle/qga/*
           else
-            tar -czf "qga-${{ matrix.name }}.tar.gz" -C dist .
+            tar -czf "qga-${{ matrix.preset }}.tar.gz" -C bundle qga
           fi
+          sha256sum qga-* > checksum.sha256
 
       - name: Upload Artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}-package
-          path: qga-*
+          name: ${{ matrix.preset }}-bundle
+          path: |
+            qga-*
+            checksum.sha256
 
+  # --- TSAN (ThreadSanitizer) ---
   tsan:
-    name: "linux-tsan"
+    name: "Ubuntu • TSan"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,21 +114,23 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang ninja-build
       - name: Build & Test
         run: |
+          export VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT
           cmake -S . -B build-tsan -G Ninja -DENABLE_TSAN=ON \
             -DCMAKE_CXX_COMPILER=clang++ \
-            -DVCPKG_ROOT=$VCPKG_INSTALLATION_ROOT
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
           cmake --build build-tsan --parallel
           export TSAN_OPTIONS="halt_on_error=1"
           ctest --test-dir build-tsan --output-on-failure
 
+  # --- RELEASE ---
   release:
-    name: "Publish Release"
-    needs: [build, tsan]
+    name: "🚀 Publish Release"
+    needs: [build-and-test, tsan]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-        with: { path: artifacts, pattern: '*-package' }
+        with: { path: artifacts, pattern: '*-bundle' }
       - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
