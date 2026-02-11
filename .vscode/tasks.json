@@ -8,6 +8,24 @@
             "group": "build"
         },
         {
+            "label": "Config: Linux Release",
+            "type": "shell",
+            "command": "cmake --preset linux-release",
+            "group": "build"
+        },
+        {
+            "label": "Config: Windows Debug",
+            "type": "shell",
+            "command": "cmake --preset windows-debug",
+            "group": "build"
+        },
+        {
+            "label": "Config: Windows Release",
+            "type": "shell",
+            "command": "cmake --preset windows-release",
+            "group": "build"
+        },
+        {
             "label": "Build: Linux Debug (All)",
             "type": "shell",
             "command": "cmake --build --preset build-linux-debug --parallel",
@@ -17,7 +35,85 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build: Windows Debug (All)",
+            "type": "shell",
+            "command": "cmake --build --preset build-windows-debug --parallel",
+            "dependsOn": [
+                "Config: Windows Debug"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Build: Linux Release (All)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-release --parallel",
+            "dependsOn": [
+                "Config: Linux Release"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build: Windows Release",
+            "type": "shell",
+            "command": "cmake --build --preset build-windows-release --parallel",
+            "dependsOn": [
+                "Config: Windows Release"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Build: API Server (Debug)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-debug --target qga_api --parallel",
+            "dependsOn": [
+                "Config: Linux Debug"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build: CLI Tool (Debug)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-debug --target qga_cli --parallel",
+            "dependsOn": [
+                "Config: Linux Debug"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Test: Unit Tests (Linux)",
+            "type": "shell",
+            "command": "ctest --preset test-unit-linux",
+            "dependsOn": [
+                "Build: Linux Debug (All)"
+            ],
+            "group": "test"
+        },
+        {
+            "label": "Doc: Generate Doxygen",
+            "type": "shell",
+            "command": "cmake --build --preset build-docs",
+            "group": "build"
+        },
+        {
+            "label": "Tool: Perf Profiling",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-profiling --parallel",
+            "group": "test"
         },
         {
             "label": "Admin: Clean Build",

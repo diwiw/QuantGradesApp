@@ -51,7 +51,13 @@ jobs:
           choco install ninja sccache --no-progress
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
-      # --- CACHE ---
+      - name: Activate MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # --- CACHE 1: COMPILER (ccache/sccache) ---
       - name: Compiler Cache
         uses: actions/cache@v4
         with:
@@ -60,6 +66,16 @@ jobs:
             ~\AppData\Local\Mozilla\sccache
           key: ${{ runner.os }}-cc-${{ github.sha }}
           restore-keys: ${{ runner.os }}-cc-
+
+      # --- CACHE 2: VCPKG DEPENDENCIES ---
+      - name: VCPKG Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/build/${{ matrix.preset }}/vcpkg_installed
+            ${{ github.workspace }}/vcpkg_installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          restore-keys: ${{ runner.os }}-vcpkg-
 
       # --- BUILD ---
       - name: Configure & Build
@@ -106,20 +122,28 @@ jobs:
 
   # --- TSAN (ThreadSanitizer) ---
   tsan:
-    name: "Ubuntu • TSan"
+    name: "linux-tsan"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup
+      - name: Setup Tools
         run: sudo apt-get update && sudo apt-get install -y clang ninja-build
-      - name: Build & Test
+             echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
+
+      - name: Build & Test (TSan)
         run: |
-          export VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT
-          cmake -S . -B build-tsan -G Ninja -DENABLE_TSAN=ON \
+          # We force Clang and RelWithDebInfo to get clear stack traces
+          cmake -S . -B build-tsan -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DENABLE_TSAN=ON \
+            -DENABLE_ASAN=OFF \
             -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+            -DVCPKG_ROOT=$VCPKG_ROOT
+
           cmake --build build-tsan --parallel
-          export TSAN_OPTIONS="halt_on_error=1"
+
+          # TSAN_OPTIONS: halt_on_error=1 means fail the build immediately on race
+          export TSAN_OPTIONS="halt_on_error=1 second_deadlock_stack=1"
           ctest --test-dir build-tsan --output-on-failure
 
   # --- RELEASE ---
