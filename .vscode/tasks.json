@@ -2,312 +2,123 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Configure Debug (vcpkg)",
+            "label": "Config: Linux Debug",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--preset",
-                "linux-debug"
+            "command": "cmake --preset linux-debug",
+            "group": "build"
+        },
+        {
+            "label": "Config: Linux Release",
+            "type": "shell",
+            "command": "cmake --preset linux-release",
+            "group": "build"
+        },
+        {
+            "label": "Config: Windows Debug",
+            "type": "shell",
+            "command": "cmake --preset windows-debug",
+            "group": "build"
+        },
+        {
+            "label": "Config: Windows Release",
+            "type": "shell",
+            "command": "cmake --preset windows-release",
+            "group": "build"
+        },
+        {
+            "label": "Build: Linux Debug (All)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-debug --parallel",
+            "dependsOn": [
+                "Config: Linux Debug"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build: Windows Debug (All)",
+            "type": "shell",
+            "command": "cmake --build --preset build-windows-debug --parallel",
+            "dependsOn": [
+                "Config: Windows Debug"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Build: Linux Release (All)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-release --parallel",
+            "dependsOn": [
+                "Config: Linux Release"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build: Windows Release",
+            "type": "shell",
+            "command": "cmake --build --preset build-windows-release --parallel",
+            "dependsOn": [
+                "Config: Windows Release"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Build: API Server (Debug)",
+            "type": "shell",
+            "command": "cmake --build --preset build-linux-debug --target qga_api --parallel",
+            "dependsOn": [
+                "Config: Linux Debug"
             ],
             "group": "build"
         },
         {
-            "label": "Configure Release (vcpkg)",
+            "label": "Build: CLI Tool (Debug)",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--preset",
-                "linux-release"
+            "command": "cmake --build --preset build-linux-debug --target qga_cli --parallel",
+            "dependsOn": [
+                "Config: Linux Debug"
             ],
             "group": "build"
         },
         {
-            "label": "Configure Profiling (vcpkg)",
+            "label": "Test: Unit Tests (Linux)",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--preset",
-                "linux-profiling"
+            "command": "ctest --preset test-unit-linux",
+            "dependsOn": [
+                "Build: Linux Debug (All)"
             ],
+            "group": "test"
+        },
+        {
+            "label": "Doc: Generate Doxygen",
+            "type": "shell",
+            "command": "cmake --build --preset build-docs",
             "group": "build"
         },
         {
-            "label": "Build Debug All Demos (vcpkg)",
+            "label": "Tool: Perf Profiling",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-debug",
-                "--parallel",
-                "--target",
-                "backtest_demo",
-                "logger_demo",
-                "grades_demo"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Debug Unit Tests (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-debug",
-                "--target",
-                "qga_tests",
-                "--parallel"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Debug E2E Tests (preset)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-debug-e2e"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "build"
-        },
-        {
-            "label": "Build Debug API (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-debug-api",
-                "--parallel"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Release All Demos (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-release",
-                "--parallel",
-                "--target",
-                "backtest_demo",
-                "logger_demo",
-                "grades_demo"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Release Tests (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-release",
-                "--target",
-                "qga_tests",
-                "--parallel"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Release E2E Tests (preset)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-release-e2e"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "build"
-        },
-        {
-            "label": "Build Release API (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-release-api",
-                "--parallel"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Test Unit (Debug)",
-            "type": "shell",
-            "command": "bash",
-            "args": [
-                "-c",
-                "cmake --build --preset build-linux-debug --target qga_tests -j && ctest -C Debug -L unit --output-on-failure --test-dir build/Debug"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
+            "command": "cmake --build --preset build-linux-profiling --parallel",
             "group": "test"
         },
         {
-            "label": "Test E2E (Debug)",
+            "label": "Admin: Clean Build",
             "type": "shell",
-            "command": "bash",
-            "args": [
-                "-c",
-                "cmake --build --preset build-linux-debug-e2e -j && ctest -C Debug -L e2e --output-on-failure --test-dir build/Debug"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "test"
-        },
-        {
-            "label": "Test Unit (Release)",
-            "type": "shell",
-            "command": "bash",
-            "args": [
-                "-c",
-                "cmake --build --preset build-linux-release --target qga_tests -j && ctest -C Release -L unit --output-on-failure --test-dir build/Release"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "test"
-        },
-        {
-            "label": "Test E2E (Release)",
-            "type": "shell",
-            "command": "bash",
-            "args": [
-                "-c",
-                "cmake --build --preset build-linux-release-e2e -j && ctest -C Release -L e2e --output-on-failure --test-dir build/Release"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "test"
-        },
-        {
-            "label": "Build Debug CLI App",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-debug-cli",
-                "--target",
-                "qga_cli",
-                "-j8"
-            ],
-            "dependsOn": [
-                "Configure Debug (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Release CLI App",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-release-cli",
-                "--target",
-                "qga_cli",
-                "-j8"
-            ],
-            "dependsOn": [
-                "Configure Release (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Build Profiling (vcpkg)",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-linux-profiling",
-                "--parallel"
-            ],
-            "dependsOn": [
-                "Configure Profiling (vcpkg)"
-            ],
-            "group": "build",
-            "problemMatcher": [
-                "$gcc"
-            ]
-        },
-        {
-            "label": "Run perf profiling",
-            "type": "shell",
-            "command": "bash",
-            "args": [
-                "tools/profiling/perf.sh",
-                "./build/Profiling/bin/qga_cli",
-                "config/perf_config.json"
-            ],
-            "group": "test"
-        },
-        {
-            "label": "Clean Build",
-            "type": "shell",
-            "command": "rm",
-            "args": [
-                "-rf",
-                "build"
-            ],
+            "command": "rm -rf build/",
             "group": "build"
         }
     ]

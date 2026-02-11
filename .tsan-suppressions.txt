@@ -1,0 +1,7 @@
+# Ignore known spdlog race (async synchronization)
+race:spdlog::details::thread_pool
+race:spdlog::async_logger
+
+# Ignore standard library race (sometimes in alocations)
+race:libstdc++.so
+race:libc.so

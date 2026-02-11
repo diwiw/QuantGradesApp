@@ -8,7 +8,9 @@
         "fmt",
         "cli11",
         "cpp-httplib",
-        "nlohmann-json"
+        "nlohmann-json",
+        "gtest",
+        "openssl"
     ],
     "builtin-baseline": "62324000504cdd27282f8275c99135cfb2bd1dc0"
 }
