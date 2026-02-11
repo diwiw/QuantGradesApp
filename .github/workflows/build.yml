@@ -119,6 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Tools
         run: |
           sudo apt-get update
@@ -129,11 +130,11 @@ jobs:
         run: |
           # We force Clang and RelWithDebInfo to get clear stack traces
           cmake -S . -B build-tsan -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DENABLE_TSAN=ON \
             -DENABLE_ASAN=OFF \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DVCPKG_ROOT=$VCPKG_ROOT
+            -DCMAKE_CXX_COMPILER=clang++
 
           cmake --build build-tsan --parallel
 
