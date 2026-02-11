@@ -57,25 +57,18 @@ jobs:
         with:
           arch: x64
 
-      # --- CACHE 1: COMPILER (ccache/sccache) ---
-      - name: Compiler Cache
+      # --- CACHING ---
+      - name: Compiler & VCPKG Cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/ccache
             ~\AppData\Local\Mozilla\sccache
-          key: ${{ runner.os }}-cc-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-cc-
-
-      # --- CACHE 2: VCPKG DEPENDENCIES ---
-      - name: VCPKG Cache
-        uses: actions/cache@v4
-        with:
-          path: |
             ${{ github.workspace }}/build/${{ matrix.preset }}/vcpkg_installed
             ${{ github.workspace }}/vcpkg_installed
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-          restore-keys: ${{ runner.os }}-vcpkg-
+          key: ${{ runner.os }}-${{ matrix.preset }}-${{ hashFiles('vcpkg.json') }}-${{ github.sha }}
+          restore-keys:
+            ${{ runner.os }}-${{ matrix.preset }}-${{ hashFiles('vcpkg.json') }}-
 
       # --- BUILD ---
       - name: Configure & Build
@@ -127,8 +120,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Tools
-        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
-             echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
       - name: Build & Test (TSan)
         run: |
