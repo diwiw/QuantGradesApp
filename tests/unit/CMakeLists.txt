@@ -10,6 +10,7 @@ message(STATUS "🧪 Configuring unit tests...")
 function(qga_apply_unit_test_settings tgt)
     target_include_directories(${tgt} PRIVATE
         ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/tests
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/external
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -22,6 +23,8 @@ function(qga_apply_unit_test_settings tgt)
             UNIT_TEST
             USE_CURL
             QGA_UNIT_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+            QGA_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/data"
+            QGA_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures"
     )
 
     # === Link libraries ===
@@ -69,15 +72,15 @@ set_tests_properties(unit_doctest PROPERTIES LABELS "unit;doctest")
 file(GLOB GTEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*_gtest.cpp")
 
 if(GTEST_SOURCES)
-    find_package(GTest REQUIRED)
     include(GoogleTest)
 
     add_executable(qga_tests_gtest ${GTEST_SOURCES})
     qga_apply_unit_test_settings(qga_tests_gtest)
 
     target_link_libraries(qga_tests_gtest PRIVATE
-        GTest::gtest_main
+        GTest::gtest
         GTest::gmock
+        GTest::gtest_main
     )
 
     gtest_discover_tests(qga_tests_gtest

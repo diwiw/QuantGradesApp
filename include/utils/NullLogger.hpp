@@ -10,45 +10,21 @@
 
 #include "utils/ILogger.hpp"
 
-namespace qga::utils {
+namespace qga::utils
+{
 
-
-/**
- * @class NullLogger
- * @brief A no-op logger implementing the ILogger interface.
- *
- * Follows the Null Object Pattern. Can be injected anywhere an ILogger is required,
- * but will silently discard all log calls.
- */
-class NullLogger : public ILogger {
-public:
-    /// @brief Default constructor.
-    NullLogger() = default;
-
-    /// @brief Destructor.
-    ~NullLogger() override = default;
-
-    /// @brief Does nothing.
-    void debug(const std::string& /*msg*/) override {}
-
-    /// @brief Does nothing.
-    void info(const std::string& /*msg*/) override {}
-
-    /// @brief Does nothing.
-    void warn(const std::string& /*msg*/) override {}
-
-    /// @brief Does nothing.
-    void error(const std::string& /*msg*/) override {}
-
-    /// @brief Does nothing.
-    void critical(const std::string& /*msg*/) override {}
-
-    /// @brief Does nothing.
-    void setLevel(qga::LogLevel /*level*/) {}
-
-    /// @brief Does nothing.
-    void log(qga::LogLevel /*level*/, const std::string& /*msg*/)  override{}
-
-};
+    /**
+     * @class NullLogger
+     * @brief A no-op logger implementing the ILogger interface.
+     *
+     * Follows the Null Object Pattern. Can be injected anywhere an ILogger is required,
+     * but will silently discard all log calls.
+     */
+    class NullLogger : public ILogger
+    {
+      public:
+        /// @brief Does nothing.
+        void log(qga::LogLevel /*level*/, const std::string& /*msg*/) override {}
+    };
 
 } // namespace qga::utils
