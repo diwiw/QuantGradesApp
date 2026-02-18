@@ -1,7 +1,7 @@
 #include "doctest.h"
+#include "fixtures/HttpTestServer.hpp"
+#include "fixtures/MockLoggerCapture.hpp"
 #include "ingest/DataIngest.hpp"
-#include "testHttpServer.hpp"
-#include "utils/MockLogger.hpp"
 
 using namespace qga::ingest;
 
@@ -9,11 +9,12 @@ TEST_CASE("DataIngest::fromHttpUrl loads valid CSV data over HTTP")
 {
 
     // Start local HTTP server
-    TestHttpServer server(8000, QGA_DATA_DIR);
+    TestHttpServer server(8000, QGA_TEST_DATA_DIR);
 
     const std::string URL = "http://localhost:8000/test_http.csv";
 
-    auto ingest = DataIngest(std::make_shared<qga::utils::MockLogger>());
+    auto logger = std::make_shared<qga::tests::fixtures::MockLoggerCapture>();
+    auto ingest = DataIngest(logger);
     auto result = ingest.fromHttpUrl(URL);
 
     REQUIRE_MESSAGE(result.has_value(), "Failed to load data from HTTP URL");

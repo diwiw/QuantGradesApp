@@ -3,22 +3,23 @@
  * @brief Unit tests for ILogger implementations (MockLogger, NullLogger, SpdLogger).
  */
 
-#include "doctest.h"
+#include <filesystem>
+#include <fstream>
 
+#include "doctest.h"
+#include "fixtures/MockLoggerCapture.hpp"
 #include "utils/ILogger.hpp"
-#include "utils/MockLogger.hpp"
 #include "utils/NullLogger.hpp"
 #include "utils/SpdLogger.hpp"
 
-#include <fstream>
-#include <filesystem>
+using namespace qga::tests::fixtures;
 
-using namespace qga::utils;
+TEST_SUITE("Logger")
+{
 
-TEST_SUITE("Logger") {
-
-    TEST_CASE("MockLogger stores messages") {
-        auto logger = std::make_shared<MockLogger>();
+    TEST_CASE("MockLogger stores messages")
+    {
+        auto logger = std::make_shared<MockLoggerCapture>();
 
         logger->info("Hello");
         logger->warn("Something might be wrong");
@@ -32,8 +33,9 @@ TEST_SUITE("Logger") {
         CHECK(errors[0] == "Error happened");
     }
 
-    TEST_CASE("NullLogger ignores messages") {
-        auto logger = std::make_shared<NullLogger>();
+    TEST_CASE("NullLogger ignores messages")
+    {
+        auto logger = std::make_shared<qga::utils::NullLogger>();
 
         // These logs should be ignored
         logger->info("Should not appear");
@@ -43,17 +45,18 @@ TEST_SUITE("Logger") {
         CHECK(true); // test will always pass
     }
 
-    TEST_CASE("SpdLogger writes to file") {
+    TEST_CASE("SpdLogger writes to file")
+    {
         const std::string LOG_FILE = "test_spdlog.log";
-        if (std::filesystem::exists(LOG_FILE)) {
+        if (std::filesystem::exists(LOG_FILE))
+        {
             std::filesystem::remove(LOG_FILE);
         }
 
         auto logger = std::make_shared<qga::utils::SpdLogger>(
             "TestLogger",
             std::vector<std::shared_ptr<spdlog::sinks::sink>>{
-                std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOG_FILE, true)
-            },
+                std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOG_FILE, true)},
             false // sync mode
         );
 

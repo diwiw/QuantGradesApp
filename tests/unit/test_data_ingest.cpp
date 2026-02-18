@@ -1,6 +1,6 @@
 #include "doctest.h"
+#include "fixtures/MockLoggerCapture.hpp"
 #include "ingest/DataIngest.hpp"
-#include "utils/MockLogger.hpp"
 
 namespace qga::ingest
 {
@@ -29,7 +29,7 @@ namespace qga::ingest
             std::vector<std::string> valid_row = {"1625097600000", "100.0", "105.0",
                                                   "99.0",          "104.0", "12345.67"};
 
-            auto ingest = DataIngest(std::make_shared<qga::utils::MockLogger>());
+            auto ingest = DataIngest(std::make_shared<qga::tests::fixtures::MockLoggerCapture>());
             CHECK(DataIngestTestAccess::validateRow(ingest, valid_row));
         }
 
@@ -39,7 +39,7 @@ namespace qga::ingest
                 "1625097600000", "100.0" // only 2 fields
             };
 
-            auto ingest = DataIngest(std::make_shared<qga::utils::MockLogger>());
+            auto ingest = DataIngest(std::make_shared<qga::tests::fixtures::MockLoggerCapture>());
             CHECK_FALSE(DataIngestTestAccess::validateRow(ingest, invalid_row));
         }
 
@@ -48,7 +48,7 @@ namespace qga::ingest
             std::vector<std::string> fields = {"1669900800000", "100.5", "102.3",
                                                "99.0",          "101.2", "12345.67"};
 
-            auto ingest = DataIngest(std::make_shared<qga::utils::MockLogger>());
+            auto ingest = DataIngest(std::make_shared<qga::tests::fixtures::MockLoggerCapture>());
             auto result = DataIngestTestAccess::parseRow(ingest, fields);
 
             REQUIRE(result.has_value());

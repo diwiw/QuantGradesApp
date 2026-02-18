@@ -132,6 +132,18 @@
                     "label": "unit"
                 }
             }
+        },
+        {
+            "name": "test-system-linux",
+            "configurePreset": "linux-debug",
+            "output": {
+                "outputOnFailure": true
+            },
+            "filter": {
+                "include": {
+                    "label": "system"
+                }
+            }
         }
     ]
 }
