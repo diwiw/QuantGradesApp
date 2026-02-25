@@ -1,120 +1,121 @@
 #include <gtest/gtest.h>
 
 #include "fixtures/MockLoggerCapture.hpp"
+// Zakładam, że ILogger.hpp lub MockLoggerCapture.hpp odpowiednio includuje LogLevel.hpp
 
-using namespace qga::tests::fixtures;
-
-// ==============================================================================
-// 1. Basic Logging and Filtering
-// ==============================================================================
-
-TEST(MockLoggerCaptureTest, StoresMessagesCorrectly)
+namespace qga::tests::fixtures::test
 {
-    MockLoggerCapture logger;
-    logger.setLevel(qga::LogLevel::Trace); // Allow all levels to pass through
 
-    logger.info("Hello");
-    logger.warn("Something might be wrong");
-    logger.error("Error happened");
+    class MockLoggerCaptureTest : public ::testing::Test
+    {
+      protected:
+        MockLoggerCapture logger;
 
-    auto infos = logger.getLogsByLevel(qga::LogLevel::Info);
-    auto warns = logger.getLogsByLevel(qga::LogLevel::Warn);
-    auto errors = logger.getLogsByLevel(qga::LogLevel::Err);
+        void SetUp() override
+        {
+            // Na starcie ustawiamy poziom na najniższy (Trace/Debug), żeby łapać wszystko
+            logger.setLevel(qga::LogLevel::Debug);
+        }
+    };
 
-    ASSERT_EQ(infos.size(), 1);
-    EXPECT_EQ(infos[0], "Hello");
+    TEST_F(MockLoggerCaptureTest, IsInitiallyEmpty)
+    {
+        EXPECT_TRUE(logger.entries().empty());
+        EXPECT_TRUE(logger.allLogs().empty());
+        EXPECT_EQ(logger.count(qga::LogLevel::Info), 0);
+        EXPECT_FALSE(logger.last().has_value());
+    }
 
-    ASSERT_EQ(warns.size(), 1);
-    EXPECT_EQ(warns[0], "Something might be wrong");
+    TEST_F(MockLoggerCaptureTest, CapturesAndStoresLogs)
+    {
+        logger.log(qga::LogLevel::Info, "Message 1");
+        logger.log(qga::LogLevel::Err, "Message 2"); // Zauważ użycie ::Err
 
-    ASSERT_EQ(errors.size(), 1);
-    EXPECT_EQ(errors[0], "Error happened");
-}
+        auto entries = logger.entries();
+        ASSERT_EQ(entries.size(), 2);
 
-TEST(MockLoggerCaptureTest, FiltersMessagesByLevelBoundaries)
-{
-    MockLoggerCapture logger;
+        EXPECT_EQ(entries[0].level, qga::LogLevel::Info);
+        EXPECT_EQ(entries[0].msg, "Message 1");
 
-    // Edge case: Block everything below ERROR
-    logger.setLevel(qga::LogLevel::Err);
+        EXPECT_EQ(entries[1].level, qga::LogLevel::Err);
+        EXPECT_EQ(entries[1].msg, "Message 2");
+    }
 
-    logger.debug("Ignored debug");
-    logger.info("Ignored info");
-    logger.error("Captured error");
+    TEST_F(MockLoggerCaptureTest, ContainsFindsSubstringCorrectly)
+    {
+        logger.log(qga::LogLevel::Info, "User logged in successfully");
+        logger.log(qga::LogLevel::Err, "Connection timeout occurred");
 
-    EXPECT_EQ(logger.entries().size(), 1);
-    EXPECT_TRUE(logger.contains(qga::LogLevel::Err, "Captured error"));
-    EXPECT_FALSE(logger.contains(qga::LogLevel::Debug, "Ignored debug"));
-}
+        // Pełne trafienia i częściowe (substring)
+        EXPECT_TRUE(logger.contains(qga::LogLevel::Info, "logged in"));
+        EXPECT_TRUE(logger.contains(qga::LogLevel::Err, "timeout"));
 
-// ==============================================================================
-// 2. Additional Methods (for high test coverage)
-// ==============================================================================
+        // Prawidłowa wiadomość, ale zły poziom logowania
+        EXPECT_FALSE(logger.contains(qga::LogLevel::Debug, "logged in"));
 
-TEST(MockLoggerCaptureTest, ClearRemovesAllEntries)
-{
-    MockLoggerCapture logger;
-    logger.setLevel(qga::LogLevel::Trace);
+        // Prawidłowy poziom, ale brakujące słowo
+        EXPECT_FALSE(logger.contains(qga::LogLevel::Info, "failed"));
+    }
 
-    // Arrange
-    logger.info("Message 1");
-    logger.error("Message 2");
-    EXPECT_EQ(logger.entries().size(), 2);
+    TEST_F(MockLoggerCaptureTest, CountReturnsCorrectNumberByLevel)
+    {
+        logger.log(qga::LogLevel::Info, "Info 1");
+        logger.log(qga::LogLevel::Info, "Info 2");
+        logger.log(qga::LogLevel::Err, "Error 1");
 
-    // Act
-    logger.clear();
+        EXPECT_EQ(logger.count(qga::LogLevel::Info), 2);
+        EXPECT_EQ(logger.count(qga::LogLevel::Err), 1);
+        EXPECT_EQ(logger.count(qga::LogLevel::Debug), 0);
+    }
 
-    // Assert
-    EXPECT_TRUE(logger.entries().empty());
-    EXPECT_EQ(logger.count(qga::LogLevel::Info), 0);
-}
+    TEST_F(MockLoggerCaptureTest, LastReturnsLatestEntry)
+    {
+        logger.log(qga::LogLevel::Info, "First log");
+        logger.log(qga::LogLevel::Err, "Second log");
 
-TEST(MockLoggerCaptureTest, CountReturnsCorrectNumber)
-{
-    MockLoggerCapture logger;
-    logger.setLevel(qga::LogLevel::Trace);
+        auto lastEntry = logger.last();
+        ASSERT_TRUE(lastEntry.has_value());
+        EXPECT_EQ(lastEntry->level, qga::LogLevel::Err);
+        EXPECT_EQ(lastEntry->msg, "Second log");
+    }
 
-    logger.info("Info 1");
-    logger.info("Info 2");
-    logger.error("Error 1");
+    TEST_F(MockLoggerCaptureTest, ClearRemovesAllData)
+    {
+        logger.log(qga::LogLevel::Info, "Some log");
+        EXPECT_EQ(logger.entries().size(), 1);
 
-    EXPECT_EQ(logger.count(qga::LogLevel::Info), 2);
-    EXPECT_EQ(logger.count(qga::LogLevel::Err), 1);
-    EXPECT_EQ(logger.count(qga::LogLevel::Warn), 0); // Level without any logs
-}
+        logger.clear();
 
-TEST(MockLoggerCaptureTest, AllLogsReturnsPreservedOrderStrings)
-{
-    MockLoggerCapture logger;
-    logger.setLevel(qga::LogLevel::Trace);
+        EXPECT_TRUE(logger.entries().empty());
+        EXPECT_FALSE(logger.last().has_value());
+    }
 
-    logger.debug("First");
-    logger.info("Second");
-    logger.error("Third");
+    TEST_F(MockLoggerCaptureTest, SetLevelFiltersOutLowerLevelLogs)
+    {
+        // Ustawiamy limit na Info (odrzucamy Trace i Debug)
+        logger.setLevel(qga::LogLevel::Info);
 
-    auto logs = logger.allLogs();
+        logger.log(qga::LogLevel::Debug, "This should be ignored");
+        logger.log(qga::LogLevel::Info, "This should be captured");
+        logger.log(qga::LogLevel::Err, "This should also be captured");
 
-    ASSERT_EQ(logs.size(), 3);
-    EXPECT_EQ(logs[0], "First");
-    EXPECT_EQ(logs[1], "Second");
-    EXPECT_EQ(logs[2], "Third");
-}
+        auto entries = logger.entries();
+        ASSERT_EQ(entries.size(), 2);
+        EXPECT_EQ(entries[0].level, qga::LogLevel::Info);
+        EXPECT_EQ(entries[1].level, qga::LogLevel::Err);
+    }
 
-TEST(MockLoggerCaptureTest, LastReturnsCorrectEntry)
-{
-    MockLoggerCapture logger;
-    logger.setLevel(qga::LogLevel::Trace);
+    TEST_F(MockLoggerCaptureTest, GetLogsByLevelReturnsOnlyMatchingStrings)
+    {
+        logger.log(qga::LogLevel::Info, "Info Message A");
+        logger.log(qga::LogLevel::Debug, "Debug Message");
+        logger.log(qga::LogLevel::Info, "Info Message B");
 
-    // 1. Verify behavior on an empty buffer (should return nullopt)
-    EXPECT_FALSE(logger.last().has_value());
+        auto infoLogs = logger.getLogsByLevel(qga::LogLevel::Info);
 
-    // 2. Add some logs
-    logger.info("Old message");
-    logger.error("Newest message");
+        ASSERT_EQ(infoLogs.size(), 2);
+        EXPECT_EQ(infoLogs[0], "Info Message A");
+        EXPECT_EQ(infoLogs[1], "Info Message B");
+    }
 
-    // 3. Verify it retrieves the last added log
-    auto lastEntry = logger.last();
-    ASSERT_TRUE(lastEntry.has_value());
-    EXPECT_EQ(lastEntry->level, qga::LogLevel::Err);
-    EXPECT_EQ(lastEntry->msg, "Newest message");
-}
+} // namespace qga::tests::fixtures::test
