@@ -33,8 +33,7 @@
                 "Config: Linux Debug"
             ],
             "group": {
-                "kind": "build",
-                "isDefault": true
+                "kind": "build"
             },
             "problemMatcher": [
                 "$gcc"
@@ -95,13 +94,14 @@
             "group": "build"
         },
         {
-            "label": "Test: Unit Tests (Linux)",
+            "label": "Test: Unit GTests (Linux)",
             "type": "shell",
-            "command": "ctest --preset test-unit-linux",
+            "command": "cmake --build --preset build-unit-gtests",
             "dependsOn": [
-                "Build: Linux Debug (All)"
+                "Config: Linux Debug"
             ],
-            "group": "test"
+            "group": "build",
+            "problemMatcher": "$gcc"
         },
         {
             "label": "Doc: Generate Doxygen",

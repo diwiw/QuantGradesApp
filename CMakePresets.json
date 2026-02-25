@@ -118,6 +118,32 @@
             "targets": [
                 "docs"
             ]
+        },
+        {
+            "name": "build-unit-gtests",
+            "displayName": "Build Unit GTests",
+            "configurePreset": "linux-debug",
+            "targets": [
+                "qga_tests_gtest"
+            ]
+        },
+        {
+            "name": "build-system-tests",
+            "displayName": "Build System Tests",
+            "configurePreset": "linux-debug",
+            "targets": [
+                "qga_system_tests"
+            ]
+        },
+        {
+            "name": "build-all-tests",
+            "displayName": "Build All Tests",
+            "configurePreset": "linux-debug",
+            "targets": [
+                "qga_tests_doctest",
+                "qga_tests_gtest",
+                "qga_system_tests"
+            ]
         }
     ],
     "testPresets": [
@@ -130,6 +156,18 @@
             "filter": {
                 "include": {
                     "label": "unit"
+                }
+            }
+        },
+        {
+            "name": "test-system-linux",
+            "configurePreset": "linux-debug",
+            "output": {
+                "outputOnFailure": true
+            },
+            "filter": {
+                "include": {
+                    "label": "system"
                 }
             }
         }

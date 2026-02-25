@@ -1,8 +1,8 @@
 # ==============================================
-# QuantGradesApp — Unit Tests
+# QuantGradesApp — Unit Tests (GTest Only)
 # ==============================================
 
-message(STATUS "🧪 Configuring unit tests...")
+message(STATUS "🧪 Configuring unit tests (GTest Only)...")
 
 # === Common settings as a function to avoid duplication (optional) ===
 
@@ -10,6 +10,7 @@ message(STATUS "🧪 Configuring unit tests...")
 function(qga_apply_unit_test_settings tgt)
     target_include_directories(${tgt} PRIVATE
         ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/tests
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/external
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -22,6 +23,8 @@ function(qga_apply_unit_test_settings tgt)
             UNIT_TEST
             USE_CURL
             QGA_UNIT_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+            QGA_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/data"
+            QGA_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures"
     )
 
     # === Link libraries ===
@@ -45,49 +48,33 @@ function(qga_apply_unit_test_settings tgt)
 
 endfunction()
 
-
 # ==============================================
-# A) Doctest (Legacy)
-# ==============================================
-
-# We take .cpp files, but exclude those from GoogleTest
-file(GLOB DOCTEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-list(FILTER DOCTEST_SOURCES EXCLUDE REGEX ".*_gtest\\.cpp$")
-
-add_executable(qga_tests_doctest ${DOCTEST_SOURCES})
-qga_apply_unit_test_settings(qga_tests_doctest)
-
-# Register with CTest with labels for Presets
-add_test(NAME unit_doctest COMMAND qga_tests_doctest)
-set_tests_properties(unit_doctest PROPERTIES LABELS "unit;doctest")
-
-
-# ==============================================
-# B) GoogleTest (New executable)
+# GoogleTest Executable
 # ==============================================
 
 file(GLOB GTEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*_gtest.cpp")
 
 if(GTEST_SOURCES)
-    find_package(GTest REQUIRED)
-    include(GoogleTest)
-
     add_executable(qga_tests_gtest ${GTEST_SOURCES})
     qga_apply_unit_test_settings(qga_tests_gtest)
 
     target_link_libraries(qga_tests_gtest PRIVATE
-        GTest::gtest_main
+        GTest::gtest
         GTest::gmock
+        GTest::gtest_main
     )
 
+    include(GoogleTest)
     gtest_discover_tests(qga_tests_gtest
         PROPERTIES LABELS "unit;gtest"
     )
     message(STATUS "  [GoogleTest] Target 'qga_tests_gtest' configured.")
 else()
     # If no files found, do not create executable - avoid error
-    message(STATUS "  [GoogleTest] No GTest files found yet. Skipping target.")
+    message(WARNING "  [GoogleTest] No *_gtest.cpp files found. Target skipped.")
 endif()
+
+add_custom_target(build_unit_tests DEPENDS qga_tests_gtest)
 
 message(STATUS "✅ Unit tests configuration complete.")
 
